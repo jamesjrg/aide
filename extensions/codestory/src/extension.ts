@@ -19,7 +19,7 @@ import { copySettings } from './utilities/copySettings';
 import { getRelevantFiles, shouldTrackFile } from './utilities/openTabs';
 import { checkReadonlyFSMode } from './utilities/readonlyFS';
 import { reportIndexingPercentage } from './utilities/reportIndexingUpdate';
-import { startSidecarBinary } from './utilities/setupSidecarBinary';
+import { startSidecarBinary, killSidecarProcess } from './utilities/setupSidecarBinary';
 import { readCustomSystemInstruction } from './utilities/systemInstruction';
 import { getUniqueId } from './utilities/uniqueId';
 import { ProjectContext } from './utilities/workspaceContext';
@@ -284,4 +284,8 @@ export async function activate(context: vscode.ExtensionContext) {
 
 	// shouldn't all listeners have this?
 	context.subscriptions.push(diagnosticsListener);
+}
+
+export async function deactivate() {
+	await killSidecarProcess();
 }
