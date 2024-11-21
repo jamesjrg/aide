@@ -122,7 +122,7 @@ export class SideCarClient {
 		const url = baseUrl.toString();
 		const asyncIterableResponse = await callServerEventStreamingBufferedGET(url);
 		for await (const line of asyncIterableResponse) {
-			const lineParts = line.split('data:{');
+			const lineParts = line.split('data: {');
 			for (const lineSinglePart of lineParts) {
 				const lineSinglePartTrimmed = lineSinglePart.trim();
 				if (lineSinglePartTrimmed === '') {
@@ -150,7 +150,7 @@ export class SideCarClient {
 		};
 		const asyncIterableResponse = await callServerEventStreamingBufferedPOST(url, finalContext);
 		for await (const line of asyncIterableResponse) {
-			const lineParts = line.split('data:{');
+			const lineParts = line.split('data: {');
 			for (const lineSinglePart of lineParts) {
 				const lineSinglePartTrimmed = lineSinglePart.trim();
 				if (lineSinglePartTrimmed === '') {
@@ -205,7 +205,7 @@ export class SideCarClient {
 		};
 		const asyncIterableResponse = await callServerEventStreamingBufferedPOST(url, body);
 		for await (const line of asyncIterableResponse) {
-			const lineParts = line.split('data:{');
+			const lineParts = line.split('data: {');
 			for (const lineSinglePart of lineParts) {
 				const lineSinglePartTrimmed = lineSinglePart.trim();
 				if (lineSinglePartTrimmed === '') {
@@ -323,7 +323,7 @@ export class SideCarClient {
 
 		const asyncIterableResponse = await callServerEventStreamingBufferedPOST(url, body);
 		for await (const line of asyncIterableResponse) {
-			const lineParts = line.split('data:{');
+			const lineParts = line.split('data: {');
 			for (const lineSinglePart of lineParts) {
 				const lineSinglePartTrimmed = lineSinglePart.trim();
 				if (lineSinglePartTrimmed === '') {
@@ -356,7 +356,7 @@ export class SideCarClient {
 
 		const asyncIterableResponse = await callServerEventStreamingBufferedPOST(url, body);
 		for await (const line of asyncIterableResponse) {
-			const lineParts = line.split('data:{');
+			const lineParts = line.split('data: {');
 			for (const lineSinglePart of lineParts) {
 				const lineSinglePartTrimmed = lineSinglePart.trim();
 				if (lineSinglePartTrimmed === '') {
@@ -468,7 +468,7 @@ export class SideCarClient {
 		};
 		const asyncIterableResponse = await callServerEventStreamingBufferedPOST(url, body);
 		for await (const line of asyncIterableResponse) {
-			const lineParts = line.split('data:{');
+			const lineParts = line.split('data: {');
 			for (const lineSinglePart of lineParts) {
 				const lineSinglePartTrimmed = lineSinglePart.trim();
 				if (lineSinglePartTrimmed === '') {
@@ -499,7 +499,7 @@ export class SideCarClient {
 		const url = baseUrl.toString();
 		const asyncIterableResponse = await callServerEventStreamingBufferedGET(url);
 		for await (const line of asyncIterableResponse) {
-			const lineParts = line.split('data:{');
+			const lineParts = line.split('data: {');
 			for (const lineSinglePart of lineParts) {
 				const lineSinglePartTrimmed = lineSinglePart.trim();
 				if (lineSinglePartTrimmed === '') {
@@ -533,7 +533,7 @@ export class SideCarClient {
 			// Is this a good placeholder? probably not, cause we can have instances
 			// of this inside the string too, but for now lets check if this works as
 			// want it to
-			const lineParts = line.split('data:{');
+			const lineParts = line.split('data: {');
 			for (const lineSinglePart of lineParts) {
 				const lineSinglePartTrimmed = lineSinglePart.trim();
 				if (lineSinglePartTrimmed === '') {
@@ -1099,7 +1099,7 @@ export class SideCarClient {
 
 		const asyncIterableResponse = callServerEventStreamingBufferedPOST(url, body);
 		for await (const line of asyncIterableResponse) {
-			const lineParts = line.split('data:{');
+			const lineParts = line.split('data: {');
 			for (const lineSinglePart of lineParts) {
 				const lineSinglePartTrimmed = lineSinglePart.trim();
 				if (lineSinglePartTrimmed === '') {
@@ -1132,7 +1132,7 @@ export class SideCarClient {
 		};
 		const asyncIterableResponse = callServerEventStreamingBufferedPOST(url, body);
 		for await (const line of asyncIterableResponse) {
-			const lineParts = line.split('data:{');
+			const lineParts = line.split('data: {');
 			for (const lineSinglePart of lineParts) {
 				const lineSinglePartTrimmed = lineSinglePart.trim();
 				if (lineSinglePartTrimmed === '') {
@@ -1185,7 +1185,7 @@ export class SideCarClient {
 
 		const asyncIterableResponse = callServerEventStreamingBufferedPOST(url, body);
 		for await (const line of asyncIterableResponse) {
-			const lineParts = line.split('data:{');
+			const lineParts = line.split('data: {');
 			for (const lineSinglePart of lineParts) {
 				const lineSinglePartTrimmed = lineSinglePart.trim();
 				if (lineSinglePartTrimmed === '') {
@@ -1239,7 +1239,7 @@ export class SideCarClient {
 
 		const asyncIterableResponse = callServerEventStreamingBufferedPOST(url, body);
 		for await (const line of asyncIterableResponse) {
-			const lineParts = line.split('data:{');
+			const lineParts = line.split('data: {');
 			for (const lineSinglePart of lineParts) {
 				const lineSinglePartTrimmed = lineSinglePart.trim();
 				if (lineSinglePartTrimmed === '') {
@@ -1293,7 +1293,7 @@ export class SideCarClient {
 
 		const asyncIterableResponse = callServerEventStreamingBufferedPOST(url, body);
 		for await (const line of asyncIterableResponse) {
-			const lineParts = line.split('data:{');
+			const lineParts = line.split('data: {');
 			for (const lineSinglePart of lineParts) {
 				const lineSinglePartTrimmed = lineSinglePart.trim();
 				if (lineSinglePartTrimmed === '') {
@@ -1351,7 +1351,7 @@ export class SideCarClient {
 
 		const asyncIterableResponse = callServerEventStreamingBufferedPOST(url, body);
 		for await (const line of asyncIterableResponse) {
-			const lineParts = line.split('data:{');
+			const lineParts = line.split('data: {');
 			for (const lineSinglePart of lineParts) {
 				const lineSinglePartTrimmed = lineSinglePart.trim();
 				if (lineSinglePartTrimmed === '') {
@@ -1415,7 +1415,7 @@ export class SideCarClient {
 
 		const asyncIterableResponse = callServerEventStreamingBufferedPOST(url, body, headers);
 		for await (const line of asyncIterableResponse) {
-			const lineParts = line.split('data:{');
+			const lineParts = line.split('data: {');
 			for (const lineSinglePart of lineParts) {
 				const lineSinglePartTrimmed = lineSinglePart.trim();
 				if (lineSinglePartTrimmed === '') {
@@ -1457,7 +1457,7 @@ export class SideCarClient {
 		};
 		const asyncIterableResponse = await callServerEventStreamingBufferedPOST(url, body);
 		for await (const line of asyncIterableResponse) {
-			const lineParts = line.split('data:{');
+			const lineParts = line.split('data: {');
 			for (const lineSinglePart of lineParts) {
 				const lineSinglePartTrimmed = lineSinglePart.trim();
 				if (lineSinglePartTrimmed === '') {
@@ -1567,7 +1567,7 @@ export class SideCarClient {
 		};
 		const asyncIterableResponse = await callServerEventStreamingBufferedPOST(url, body);
 		for await (const line of asyncIterableResponse) {
-			const lineParts = line.split('data:{');
+			const lineParts = line.split('data: {');
 			for (const lineSinglePart of lineParts) {
 				const lineSinglePartTrimmed = lineSinglePart.trim();
 				if (lineSinglePartTrimmed === '') {
