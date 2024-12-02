@@ -4,6 +4,7 @@
  *--------------------------------------------------------------------------------------------*/
 import * as os from 'os';
 import * as vscode from 'vscode';
+import * as path from 'path';
 
 import { createInlineCompletionItemProvider } from './completions/create-inline-completion-item-provider';
 import { AideAgentSessionProvider } from './completions/providers/aideAgentProvider';
@@ -26,6 +27,7 @@ import { ProjectContext } from './utilities/workspaceContext';
 import { CSEventHandler } from './csEvents/csEventHandler';
 import { RecentEditsRetriever } from './server/editedFiles';
 import { getRipGrepPath } from './utilities/ripGrep';
+import { sidecarUseSelfRun } from './utilities/sidecarUrl';
 // import { GENERATE_PLAN } from './completions/providers/generatePlan';
 // import { OPEN_FILES_VARIABLE } from './completions/providers/openFiles';
 
@@ -110,7 +112,15 @@ export async function activate(context: vscode.ExtensionContext) {
 	// Get model selection configuration
 	const modelConfiguration = await vscode.modelSelection.getConfiguration();
 	// Setup the sidecar client here
-	const sidecarUrl = await startSidecarBinary(context.globalStorageUri.fsPath, vscode.env.appRoot);
+	const sideCarBinDir = vscode.Uri.joinPath(
+		vscode.extensions.getExtension('codestory-ghost.codestoryai')?.extensionUri ?? vscode.Uri.parse(''),
+		'sidecar_bin', 'target', 'release').toString();
+
+	const sidecarBinPath = (os.platform() === 'win32')
+		? path.join(sideCarBinDir, 'webserver.exe')
+		: path.join(sideCarBinDir, 'webserver');
+
+	const sidecarUrl = await startSidecarBinary(sidecarBinPath);
 	// allow-any-unicode-next-line
 	// window.showInformationMessage(`Sidecar binary 🦀 started at ${sidecarUrl}`);
 	const sidecarClient = new SideCarClient(sidecarUrl, modelConfiguration);
@@ -287,5 +297,7 @@ export async function activate(context: vscode.ExtensionContext) {
 }
 
 export async function deactivate() {
-	await killSidecarProcess();
+	if (!sidecarUseSelfRun()) {
+		await killSidecarProcess();
+	}
 }
