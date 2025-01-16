@@ -9,6 +9,7 @@ import { IHistoryNavigationWidget } from '../../../../base/browser/history.js';
 import { StandardKeyboardEvent } from '../../../../base/browser/keyboardEvent.js';
 import * as aria from '../../../../base/browser/ui/aria/aria.js';
 import { Button } from '../../../../base/browser/ui/button/button.js';
+import { IManagedHover } from '../../../../base/browser/ui/hover/hover.js';
 import { IHoverDelegate } from '../../../../base/browser/ui/hover/hoverDelegate.js';
 import { getBaseLayerHoverDelegate } from '../../../../base/browser/ui/hover/hoverDelegate2.js';
 import { createInstantHoverDelegate, getDefaultHoverDelegate } from '../../../../base/browser/ui/hover/hoverDelegateFactory.js';
@@ -60,6 +61,7 @@ import { INotificationService } from '../../../../platform/notification/common/n
 import { IOpenerService, OpenInternalOptions } from '../../../../platform/opener/common/opener.js';
 import { IThemeService } from '../../../../platform/theme/common/themeService.js';
 import { ResourceLabels } from '../../../browser/labels.js';
+import { AgentMode } from '../../../../platform/aideAgent/common/model.js';
 import { AccessibilityVerbositySettingId } from '../../accessibility/browser/accessibilityConfiguration.js';
 import { AccessibilityCommandId } from '../../accessibility/common/accessibilityCommands.js';
 import { getSimpleCodeEditorWidgetOptions, getSimpleEditorOptions, setupSimpleEditorSelectionStyling } from '../../codeEditor/browser/simpleEditorOptions.js';
@@ -67,7 +69,7 @@ import { revealInSideBarCommand } from '../../files/browser/fileActions.contribu
 import { ModelSelectionIndicator } from '../../preferences/browser/modelSelectionIndicator.js';
 import { ChatAgentLocation } from '../common/aideAgentAgents.js';
 import { CONTEXT_CHAT_HAS_FILE_ATTACHMENTS, CONTEXT_CHAT_INPUT_CURSOR_AT_TOP, CONTEXT_CHAT_INPUT_HAS_FOCUS, CONTEXT_CHAT_INPUT_HAS_TEXT, CONTEXT_CHAT_MODE, CONTEXT_IN_CHAT_INPUT } from '../common/aideAgentContextKeys.js';
-import { AgentMode, AgentScope, IChatRequestVariableEntry } from '../common/aideAgentModel.js';
+import { AgentScope, IChatRequestVariableEntry } from '../common/aideAgentModel.js';
 import { IChatFollowup } from '../common/aideAgentService.js';
 import { IChatResponseViewModel } from '../common/aideAgentViewModel.js';
 import { IAideAgentWidgetHistoryService, IChatHistoryEntry } from '../common/aideAgentWidgetHistoryService.js';
@@ -465,6 +467,7 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 				dom.h('.interactive-input-followups@followupsContainer'),
 				dom.h('.interactive-input-status-message@statusMessageContainer', [
 					dom.h('.model-config@modelConfig'),
+					dom.h('.model-support@modelSupport'),
 					dom.h('.status-message@statusMessage'),
 				])
 			]);
@@ -480,6 +483,7 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 				]),
 				dom.h('.interactive-input-status-message@statusMessageContainer', [
 					dom.h('.model-config@modelConfig'),
+					dom.h('.model-support@modelSupport'),
 					dom.h('.status-message@statusMessage'),
 				])
 			]);
@@ -504,7 +508,6 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 			buttonBorder: 'none',
 			supportIcons: true,
 		});
-		const statusMessage = elements.statusMessage;
 
 		const inputScopedContextKeyService = this._register(this.contextKeyService.createScoped(inputContainer));
 		CONTEXT_IN_CHAT_INPUT.bindTo(inputScopedContextKeyService).set(true);
@@ -673,46 +676,9 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 			this.commandService.executeCommand(ModelSelectionIndicator.SWITCH_MODEL_COMMAND_ID);
 		});
 
-		// Sidecar status
-		const textSpan = dom.$('span');
-		const runningStatus = this.sidecarService.runningStatus;
-		const downloadStatus = this.sidecarService.downloadStatus;
-		const version = this.sidecarService.version;
-		const { text, color, updateAvailable, hover } = this.getSidecarStatus(runningStatus, downloadStatus, version);
-		textSpan.textContent = text;
-		this.statusClickable = updateAvailable || runningStatus === SidecarRunningStatus.Unavailable;
-		this._register(dom.addDisposableListener(textSpan, dom.EventType.CLICK, () => {
-			if (this.statusClickable) {
-				this.sidecarService.triggerRestart();
-			}
-		}));
-		const managedHover = this._register(getBaseLayerHoverDelegate().setupManagedHover(
-			getDefaultHoverDelegate('mouse'),
-			statusMessage,
-			hover
-		));
+		this.addSidecarIndicator(elements.statusMessage);
 
-		const iconSpan = dom.$('span');
-		iconSpan.classList.add(...ThemeIcon.asClassNameArray(Codicon.circleFilled));
-		iconSpan.style.color = color;
-		statusMessage.appendChild(textSpan);
-		statusMessage.appendChild(iconSpan);
-
-		this._register(this.sidecarService.onDidChangeStatus(({ version, runningStatus, downloadStatus }) => {
-			const { text, color, updateAvailable, hover } = this.getSidecarStatus(runningStatus, downloadStatus, version);
-			textSpan.textContent = text;
-			const clickable = updateAvailable || runningStatus === SidecarRunningStatus.Unavailable;
-			this.statusClickable = clickable;
-			textSpan.style.cursor = clickable ? 'pointer' : 'default';
-			managedHover.update(clickable ? 'Click to restart the sidecar' : hover);
-			iconSpan.style.color = color;
-
-			if (runningStatus !== SidecarRunningStatus.Connected) {
-				this.inputEditor.updateOptions({ readOnly: true });
-			} else {
-				this.inputEditor.updateOptions({ readOnly: false });
-			}
-		}));
+		this.addAgenticSupportIndicator(elements.modelSupport);
 
 		let inputModel = this.modelService.getModel(this.inputUri);
 		if (!inputModel) {
@@ -752,6 +718,97 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 		this._register(this.themeService.onDidFileIconThemeChange(() => {
 			this.renderAttachedContext();
 		}));
+	}
+
+	private addSidecarIndicator(element: HTMLElement) {
+		const textSpan = dom.$('span');
+		const runningStatus = this.sidecarService.runningStatus;
+		const downloadStatus = this.sidecarService.downloadStatus;
+		const version = this.sidecarService.version;
+		const { text, color, updateAvailable, hover } = this.getSidecarStatus(runningStatus, downloadStatus, version);
+		textSpan.textContent = text;
+		this.statusClickable = updateAvailable || runningStatus === SidecarRunningStatus.Unavailable;
+		this._register(dom.addDisposableListener(textSpan, dom.EventType.CLICK, () => {
+			if (this.statusClickable) {
+				this.sidecarService.triggerRestart();
+			}
+		}));
+		const managedHover = this._register(getBaseLayerHoverDelegate().setupManagedHover(
+			getDefaultHoverDelegate('mouse'),
+			element,
+			hover
+		));
+
+		const iconSpan = dom.$('span');
+		iconSpan.classList.add(...ThemeIcon.asClassNameArray(Codicon.circleFilled));
+		iconSpan.style.color = color;
+		element.appendChild(textSpan);
+		element.appendChild(iconSpan);
+
+		this._register(this.sidecarService.onDidChangeStatus(({ version, runningStatus, downloadStatus }) => {
+			const { text, color, updateAvailable, hover } = this.getSidecarStatus(runningStatus, downloadStatus, version);
+			textSpan.textContent = text;
+			const clickable = updateAvailable || runningStatus === SidecarRunningStatus.Unavailable;
+			this.statusClickable = clickable;
+			textSpan.style.cursor = clickable ? 'pointer' : 'default';
+			managedHover.update(clickable ? 'Click to restart the sidecar' : hover);
+			iconSpan.style.color = color;
+
+			if (runningStatus !== SidecarRunningStatus.Connected) {
+				this.inputEditor.updateOptions({ readOnly: true });
+			} else {
+				this.inputEditor.updateOptions({ readOnly: false });
+			}
+		}));
+	}
+
+	private async getAgenticFeatureSupportInfo(iconSpan: HTMLSpanElement, textSpan: HTMLSpanElement, managedHover: IManagedHover) {
+		const { supportsAgenticFeatures, currentModel } = await this.aiModelSelectionService.checkIfCurrentModelSelectionSupportsAgenticFeatures(this.mode);
+
+		if (supportsAgenticFeatures) {
+			dom.hide(iconSpan);
+			managedHover.update(localize('chat.agenticSupportIndicator.supportedInfo', '{0} is optimized  for {1} mode', currentModel.name, this.mode));
+			textSpan.textContent = '';
+			textSpan.ariaHidden = 'true';
+		} else {
+			dom.show(iconSpan);
+			textSpan.textContent = localize('chat.agenticSupportIndicator.flag', 'Unoptimized model');
+			textSpan.ariaHidden = 'false';
+			managedHover.update(localize('chat.agenticSupportIndicator.notSupportedInfo', '{0} is not yet optimizted for {1} mode', currentModel.name, this.mode));
+		}
+	}
+
+	private addAgenticSupportIndicator(element: HTMLElement) {
+		const iconSpan = dom.$('span');
+		iconSpan.classList.add(...ThemeIcon.asClassNameArray(Codicon.warning));
+		iconSpan.style.color = 'var(--vscode-editorGutter-modifiedBackground)';
+		element.appendChild(iconSpan);
+
+		const textSpan = dom.$('span');
+		element.appendChild(textSpan);
+
+		const managedHover = this._register(getBaseLayerHoverDelegate().setupManagedHover(
+			getDefaultHoverDelegate('mouse'),
+			element,
+			''
+		));
+
+		this.getAgenticFeatureSupportInfo(iconSpan, textSpan, managedHover).then(() => {
+			// element starts by being invisible
+			element.style.visibility = 'visible';
+		});
+
+		this._register(this.aiModelSelectionService.onDidChangeModelSelection(() => {
+			this.getAgenticFeatureSupportInfo(iconSpan, textSpan, managedHover);
+		}));
+
+		this._register(
+			this.contextKeyService.onDidChangeContext(event => {
+				if (event.affectsSome(new Set([CONTEXT_CHAT_MODE.key]))) {
+					this.getAgenticFeatureSupportInfo(iconSpan, textSpan, managedHover);
+				}
+			})
+		);
 	}
 
 	private async renderAttachedContext() {

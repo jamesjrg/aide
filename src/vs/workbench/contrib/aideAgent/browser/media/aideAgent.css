@@ -571,7 +571,8 @@ have to be updated for changes to the rules above, or to support more deeply nes
 	color: var(--vscode-disabledForeground);
 	display: flex;
 	align-items: center;
-	justify-content: space-between;
+	gap: 4px;
+	margin-bottom: -1px;
 	padding-top: 4px;
 }
 
@@ -580,10 +581,22 @@ have to be updated for changes to the rules above, or to support more deeply nes
 	border: 0;
 }
 
+.interactive-session .interactive-input-status-message .model-support {
+	visibility: hidden;
+	display: flex;
+	align-items: center;
+	gap: 1px;
+}
+
+.interactive-session .interactive-input-status-message .model-support .codicon {
+	transform: translateY(1px);
+}
+
 .interactive-session .interactive-input-status-message .status-message {
 	display: flex;
 	align-items: center;
 	gap: 2px;
+	margin-left: auto;
 }
 
 .interactive-session .interactive-input-status-message .status-message .codicon.codicon-circle-filled {

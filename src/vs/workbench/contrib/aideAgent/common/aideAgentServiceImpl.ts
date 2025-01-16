@@ -14,6 +14,7 @@ import { Disposable, DisposableMap, IDisposable } from '../../../../base/common/
 import { revive } from '../../../../base/common/marshalling.js';
 import { URI, UriComponents } from '../../../../base/common/uri.js';
 import { localize } from '../../../../nls.js';
+import { AgentMode } from '../../../../platform/aideAgent/common/model.js';
 import { ICSAccountService } from '../../../../platform/codestoryAccount/common/csAccount.js';
 import { IContextKeyService } from '../../../../platform/contextkey/common/contextkey.js';
 import { IInstantiationService } from '../../../../platform/instantiation/common/instantiation.js';
@@ -25,7 +26,7 @@ import { IExtensionService } from '../../../services/extensions/common/extension
 import { IRageShakeService } from '../../../services/rageShake/common/rageShake.js';
 import { ChatAgentLocation, IAideAgentAgentService, IChatAgent, IChatAgentCommand, IChatAgentData, IChatAgentRequest, IChatAgentResult } from './aideAgentAgents.js';
 import { CONTEXT_VOTE_UP_ENABLED } from './aideAgentContextKeys.js';
-import { AgentMode, AgentScope, ChatModel, ChatRequestModel, ChatResponseModel, IChatModel, IChatRequestVariableData, IChatResponseModel, IExportableChatData, ISerializableChatData, ISerializableChatDataIn, ISerializableChatsData, updateRanges } from './aideAgentModel.js';
+import { AgentScope, ChatModel, ChatRequestModel, ChatResponseModel, IChatModel, IChatRequestVariableData, IChatResponseModel, IExportableChatData, ISerializableChatData, ISerializableChatDataIn, ISerializableChatsData, updateRanges } from './aideAgentModel.js';
 import { ChatRequestAgentPart, ChatRequestAgentSubcommandPart, ChatRequestSlashCommandPart, IParsedChatRequest, chatAgentLeader, chatSubcommandLeader, getPromptText } from './aideAgentParserTypes.js';
 import { ChatRequestParser } from './aideAgentRequestParser.js';
 import { IAideAgentService, IChatCompleteResponse, IChatDetail, IChatFollowup, IChatProgress, IChatSendRequestData, IChatSendRequestOptions, IChatSendRequestResponseState, IChatTransferredSessionData, IChatUserActionEvent } from './aideAgentService.js';

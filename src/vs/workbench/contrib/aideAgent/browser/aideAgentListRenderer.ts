@@ -473,7 +473,7 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 				}
 			}
 		}
-
+		// here infra issue render
 		if (isResponseVM(element) && element.errorDetails?.message) {
 			const renderedError = this.instantiationService.createInstance(ChatWarningContentPart, element.errorDetails.responseIsFiltered ? 'info' : 'error', new MarkdownString(element.errorDetails.message), this.renderer);
 			templateData.elementDisposables.add(renderedError);

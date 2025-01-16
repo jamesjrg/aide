@@ -13,6 +13,7 @@ import { ICodeEditor } from '../../../../../editor/browser/editorBrowser.js';
 import { EditorAction2 } from '../../../../../editor/browser/editorExtensions.js';
 import { localize, localize2 } from '../../../../../nls.js';
 import { Action2, MenuId, registerAction2 } from '../../../../../platform/actions/common/actions.js';
+import { AgentMode } from '../../../../../platform/aideAgent/common/model.js';
 import { ICommandService } from '../../../../../platform/commands/common/commands.js';
 import { ContextKeyExpr } from '../../../../../platform/contextkey/common/contextkey.js';
 import { IsLinuxContext, IsWindowsContext } from '../../../../../platform/contextkey/common/contextkeys.js';
@@ -23,7 +24,6 @@ import { IEditorGroupsService } from '../../../../services/editor/common/editorG
 import { ACTIVE_GROUP, IEditorService } from '../../../../services/editor/common/editorService.js';
 import { IViewsService } from '../../../../services/views/common/viewsService.js';
 import { CONTEXT_CHAT_ENABLED, CONTEXT_CHAT_INPUT_CURSOR_AT_TOP, CONTEXT_CHAT_PANEL_PARTICIPANT_REGISTERED, CONTEXT_IN_CHAT_INPUT, CONTEXT_IN_CHAT_SESSION } from '../../common/aideAgentContextKeys.js';
-import { AgentMode } from '../../common/aideAgentModel.js';
 import { IAideAgentService, IChatDetail } from '../../common/aideAgentService.js';
 import { IChatRequestViewModel, IChatResponseViewModel, isRequestVM } from '../../common/aideAgentViewModel.js';
 import { IAideAgentWidgetHistoryService } from '../../common/aideAgentWidgetHistoryService.js';

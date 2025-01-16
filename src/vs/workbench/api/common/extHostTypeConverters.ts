@@ -37,7 +37,7 @@ import { ProgressLocation as MainProgressLocation } from '../../../platform/prog
 import { DEFAULT_EDITOR_ASSOCIATION, SaveReason } from '../../common/editor.js';
 import { IViewBadge } from '../../common/views.js';
 import { IChatAgentRequest as IAideAgentRequest } from '../../contrib/aideAgent/common/aideAgentAgents.js';
-import { AgentMode, AgentScope } from '../../contrib/aideAgent/common/aideAgentModel.js';
+import { AgentScope } from '../../contrib/aideAgent/common/aideAgentModel.js';
 import { IAideAgentPlanStep, IAideAgentProgressStage, IChatEndResponse, IChatContentInlineReference as IAideAgentContentInlineReference } from '../../contrib/aideAgent/common/aideAgentService.js';
 import { SidecarRunningStatus } from '../../contrib/aideAgent/common/sidecarService.js';
 import { ChatAgentLocation, IChatAgentRequest, IChatAgentResult } from '../../contrib/chat/common/chatAgents.js';
@@ -63,6 +63,7 @@ import { LanguageModelTextPart, LanguageModelPromptTsxPart } from './extHostType
 import { MarshalledId } from '../../../base/common/marshallingIds.js';
 import { IChatRequestDraft } from '../../contrib/chat/common/chatEditingService.js';
 import { DevtoolsStatus } from '../../contrib/aideAgent/common/devtoolsService.js';
+import { AgentMode } from '../../../platform/aideAgent/common/model.js';
 
 export namespace Command {
 

@@ -20,6 +20,7 @@ import { Extensions, IJSONContributionRegistry } from '../../../../platform/json
 import { ILogService } from '../../../../platform/log/common/log.js';
 import { Registry } from '../../../../platform/registry/common/platform.js';
 import { IUriIdentityService } from '../../../../platform/uriIdentity/common/uriIdentity.js';
+import { AgentMode } from '../../../../platform/aideAgent/common/model.js';
 import { IUserDataProfileService } from '../../userDataProfile/common/userDataProfile.js';
 
 export const allowedProviders = new Set([
@@ -89,6 +90,18 @@ export class AIModelsService extends Disposable implements IAIModelSelectionServ
 			await this.modelSelection.initialize();
 		}
 		return this.modelSelection.modelSelection!;
+	}
+
+	async checkIfCurrentModelSelectionSupportsAgenticFeatures(mode: AgentMode) {
+		const modelSelection = await this.getModelSelectionSettings();
+		const currentModelId = modelSelection.slowModel;
+		const currentModel = modelSelection.models[currentModelId];
+		// Temporary, half-assed check
+		const supportsAgenticFeatures = mode === AgentMode.Chat || currentModelId.toLocaleLowerCase().includes('sonnet');
+		return {
+			currentModel,
+			supportsAgenticFeatures
+		};
 	}
 
 	async checkIfModelIdIsTaken(modelId: string): Promise<[boolean, takenModel: ILanguageModelItem]> {

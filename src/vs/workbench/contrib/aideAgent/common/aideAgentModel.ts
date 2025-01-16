@@ -752,13 +752,6 @@ export enum ChatModelInitState {
 	Initialized
 }
 
-export enum AgentMode {
-	Chat = 'Chat',
-	Edit = 'Edit',
-	Plan = 'Plan',
-	Agentic = 'Agentic'
-}
-
 export enum AgentScope {
 	Selection = 'Selection',
 	PinnedContext = 'Pinned Context',
