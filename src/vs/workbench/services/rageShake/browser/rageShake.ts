@@ -197,6 +197,7 @@ export class RageShakeService extends Disposable implements IRageShakeService {
 		}
 
 		this.messageMap.clear();
+		this.screenShotArrayBuffer = undefined;
 
 		const headers: HeadersInit = {
 			'Content-Type': 'application/json',
