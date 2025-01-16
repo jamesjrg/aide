@@ -772,7 +772,6 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 			textSpan.ariaHidden = 'true';
 		} else {
 			dom.show(iconSpan);
-			textSpan.textContent = localize('chat.agenticSupportIndicator.flag', 'Unoptimized model');
 			textSpan.ariaHidden = 'false';
 			managedHover.update(localize('chat.agenticSupportIndicator.notSupportedInfo', '{0} is not yet optimizted for {1} mode', currentModel.name, this.mode));
 		}
