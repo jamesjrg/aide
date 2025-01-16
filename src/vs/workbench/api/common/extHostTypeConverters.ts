@@ -38,7 +38,7 @@ import { DEFAULT_EDITOR_ASSOCIATION, SaveReason } from '../../common/editor.js';
 import { IViewBadge } from '../../common/views.js';
 import { IChatAgentRequest as IAideAgentRequest } from '../../contrib/aideAgent/common/aideAgentAgents.js';
 import { AgentScope } from '../../contrib/aideAgent/common/aideAgentModel.js';
-import { IAideAgentPlanStep, IAideAgentProgressStage, IChatEndResponse, IChatContentInlineReference as IAideAgentContentInlineReference } from '../../contrib/aideAgent/common/aideAgentService.js';
+import { IAideAgentPlanStep, IAideAgentProgressStage, IChatEndResponse, IChatContentInlineReference as IAideAgentContentInlineReference, IAideAgentToolTypeError } from '../../contrib/aideAgent/common/aideAgentService.js';
 import { SidecarRunningStatus } from '../../contrib/aideAgent/common/sidecarService.js';
 import { ChatAgentLocation, IChatAgentRequest, IChatAgentResult } from '../../contrib/chat/common/chatAgents.js';
 import { IChatRequestVariableEntry } from '../../contrib/chat/common/chatModel.js';
@@ -3035,6 +3035,15 @@ export namespace AideAgentProgressStagePart {
 	export function from(part: types.AideAgentProgressStagePart): Dto<IAideAgentProgressStage> {
 		return {
 			kind: 'stage',
+			message: part.message,
+		};
+	}
+}
+
+export namespace AideAgentToolTypeError {
+	export function from(part: types.AideAgentToolTypeError): Dto<IAideAgentToolTypeError> {
+		return {
+			kind: 'toolTypeError',
 			message: part.message,
 		};
 	}

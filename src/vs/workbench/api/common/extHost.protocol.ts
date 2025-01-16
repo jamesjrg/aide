@@ -54,7 +54,7 @@ import { SaveReason } from '../../common/editor.js';
 import { IRevealOptions, ITreeItem, IViewBadge } from '../../common/views.js';
 import { ChatAgentLocation as AideAgentLocation } from '../../contrib/aideAgent/common/aideAgentAgents.js';
 import { IChatProgressResponseContent as IAideAgentProgressResponseContent } from '../../contrib/aideAgent/common/aideAgentModel.js';
-import { IAideAgentPlanStep, IAideAgentProgressStage, IChatCodeEdit, IChatEndResponse } from '../../contrib/aideAgent/common/aideAgentService.js';
+import { IAideAgentPlanStep, IAideAgentProgressStage, IChatCodeEdit, IChatEndResponse, IAideAgentToolTypeError } from '../../contrib/aideAgent/common/aideAgentService.js';
 import { DevtoolsStatus } from '../../contrib/aideAgent/common/devtoolsService.js';
 import { SidecarDownloadStatus, SidecarRunningStatus } from '../../contrib/aideAgent/common/sidecarService.js';
 import { CallHierarchyItem } from '../../contrib/callHierarchy/common/callHierarchy.js';
@@ -1457,10 +1457,11 @@ export interface ExtHostAideAgentAgentsShape {
 }
 
 export type IChatCodeEditDto = Pick<IChatCodeEdit, 'kind'> & { edits: IWorkspaceEditDto };
+
 export type IAideAgentProgressDto =
 	| IChatProgressDto
 	| IChatCodeEditDto
-	| Dto<IAideAgentPlanStep | IAideAgentProgressStage | IChatEndResponse>;
+	| Dto<IAideAgentPlanStep | IAideAgentProgressStage | IAideAgentToolTypeError | IChatEndResponse>;
 
 export type IAideAgentContentProgressDto =
 	| Dto<Exclude<IAideAgentProgressResponseContent, IChatTask>>

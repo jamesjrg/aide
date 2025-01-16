@@ -4899,6 +4899,11 @@ export enum AideAgentScope {
 	Codebase = 3
 }
 
+export enum AideAgentReferenceKind {
+	File = 1,
+	Code = 2
+}
+
 export class ChatResponseCodeEditPart {
 	edits: vscode.WorkspaceEdit;
 	constructor(edits: vscode.WorkspaceEdit) {
@@ -4921,6 +4926,14 @@ export class AideAgentProgressStagePart {
 
 	constructor(stage: vscode.AideAgentProgressStagePart) {
 		this.message = stage.message;
+	}
+}
+
+export class AideAgentToolTypeError {
+	message: string;
+
+	constructor(error: vscode.AideAgentToolTypeError) {
+		this.message = error.message;
 	}
 }
 

@@ -210,6 +210,11 @@ export interface IAideAgentProgressStage {
 	kind: 'stage';
 }
 
+export interface IAideAgentToolTypeError {
+	message: string;
+	kind: 'toolTypeError';
+}
+
 export type IAideAgentPlanProgressContent = IAideAgentPlanStep | IAideAgentProgressStage;
 
 export interface IChatEndResponse {
@@ -237,6 +242,7 @@ export type IChatProgress =
 	| IChatConfirmation
 	| IAideAgentPlanStep
 	| IAideAgentPlanProgressContent
+	| IAideAgentToolTypeError
 	| IChatEndResponse;
 
 export interface IChatFollowup {

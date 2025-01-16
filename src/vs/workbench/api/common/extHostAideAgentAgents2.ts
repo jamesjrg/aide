@@ -147,6 +147,11 @@ class AideAgentResponseStream {
 					_report(dto);
 					return this;
 				},
+				toolTypeError(value) {
+					const part = new extHostTypes.AideAgentToolTypeError(value);
+					const dto = typeConvert.AideAgentToolTypeError.from(part);
+					_report(dto);
+				},
 				warning(value) {
 					throwIfDone(this.progress);
 					const part = new extHostTypes.ChatResponseWarningPart(value);
