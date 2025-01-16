@@ -146,6 +146,10 @@ interface ToolNotFoundEvent {
 	full_output: string;
 }
 
+interface ToolTypeErrorEvent {
+	error_string: string;
+}
+
 type FrameworkEvent = {
 	RepoMapGenerationStart: string;
 	RepoMapGenerationFinished: string;
@@ -164,6 +168,7 @@ type FrameworkEvent = {
 	ToolUseDetected: ToolUseDetectedEvent;
 	ToolThinking: ToolThinkingEvent;
 	ToolNotFound: ToolNotFoundEvent;
+	ToolTypeError: ToolTypeErrorEvent;
 	ToolTypeFound: ToolTypeFoundEvent;
 	ToolParameterFound: ToolParameterFoundEvent;
 	ToolOutput: ToolOutputEvent;

@@ -590,6 +590,14 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 							}
 						}
 					}
+				} else if (event.event.FrameworkEvent.ToolTypeError) {
+					responseStream.stream.toolTypeError({ message: event.event.FrameworkEvent.ToolTypeError.error_string });
+					responseStream.stream.stage({ message: 'Error' });
+					const openStreams = this.responseStreamCollection.getAllResponseStreams();
+					for (const stream of openStreams) {
+						this.closeAndRemoveResponseStream(sessionId, stream.exchangeId);
+					}
+					return;
 				}
 			} else if (event.event.SymbolEvent) {
 				const symbolEvent = event.event.SymbolEvent.event;

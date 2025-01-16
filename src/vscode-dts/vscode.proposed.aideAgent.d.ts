@@ -17,8 +17,13 @@ declare module 'vscode' {
 		Codebase = 3
 	}
 
+	export enum AideAgentReferenceKind {
+		File = 1,
+		Code = 2
+	}
+
 	export interface AideAgentFileReference extends ChatPromptReference {
-		readonly id: 'vscode.file';
+		readonly kind: AideAgentReferenceKind.File;
 		readonly value: {
 			uri: Uri;
 			range: Range;
@@ -26,7 +31,7 @@ declare module 'vscode' {
 	}
 
 	export interface AideAgentCodeReference extends ChatPromptReference {
-		readonly id: 'vscode.code';
+		readonly kind: AideAgentReferenceKind.Code;
 		readonly value: {
 			uri: Uri;
 			range: Range;
@@ -81,6 +86,10 @@ declare module 'vscode' {
 		readonly message: string;
 	}
 
+	export interface AideAgentToolTypeError {
+		readonly message: string;
+	}
+
 	export type AideAgentResponsePart = ExtendedChatResponsePart | ChatResponseCodeEditPart;
 
 	export interface AideAgentResponseStream extends ChatResponseStream {
@@ -89,6 +98,7 @@ declare module 'vscode' {
 		step(step: AideAgentPlanStepPart): void;
 		stage(stage: AideAgentProgressStagePart): void;
 		close(): void;
+		toolTypeError(message: AideAgentToolTypeError): void;
 	}
 
 	export interface AideAgentEventSenderResponse {

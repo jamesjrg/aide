@@ -36,7 +36,7 @@ import { IWorkbenchIssueService } from '../../issue/common/issue.js';
 import { CONTEXT_CHAT_RESPONSE_SUPPORT_ISSUE_REPORTING, CONTEXT_REQUEST, CONTEXT_RESPONSE, CONTEXT_RESPONSE_DETECTED_AGENT_COMMAND, CONTEXT_RESPONSE_ERROR, CONTEXT_RESPONSE_FILTERED, CONTEXT_RESPONSE_VOTE } from '../common/aideAgentContextKeys.js';
 import { IChatRequestVariableEntry, IChatTextEditGroup } from '../common/aideAgentModel.js';
 import { chatSubcommandLeader } from '../common/aideAgentParserTypes.js';
-import { ChatAgentVoteDirection, ChatAgentVoteDownReason, IChatConfirmation, IChatContentReference, IChatFollowup, IChatMarkdownContent, IChatTask, IChatTreeData } from '../common/aideAgentService.js';
+import { ChatAgentVoteDirection, ChatAgentVoteDownReason, IAideAgentToolTypeError, IChatConfirmation, IChatContentReference, IChatFollowup, IChatMarkdownContent, IChatTask, IChatTreeData } from '../common/aideAgentService.js';
 import { IChatCodeCitations, IChatReferences, IChatRendererContent, IChatRequestViewModel, IChatResponseViewModel, isRequestVM, isResponseVM } from '../common/aideAgentViewModel.js';
 import { annotateSpecialMarkdownContent } from '../common/annotations.js';
 import { CodeBlockModelCollection } from '../common/codeBlockModelCollection.js';
@@ -473,7 +473,7 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 				}
 			}
 		}
-		// here infra issue render
+
 		if (isResponseVM(element) && element.errorDetails?.message) {
 			const renderedError = this.instantiationService.createInstance(ChatWarningContentPart, element.errorDetails.responseIsFiltered ? 'info' : 'error', new MarkdownString(element.errorDetails.message), this.renderer);
 			templateData.elementDisposables.add(renderedError);
@@ -648,6 +648,8 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 			return this.renderContentReferencesListData(content, undefined, context, templateData);
 		} else if (content.kind === 'codeCitations') {
 			return this.renderCodeCitationsListData(content, context, templateData);
+		} else if (content.kind === 'toolTypeError') {
+			return this.renderToolTypeError(content, context, templateData);
 		}
 
 		return undefined;
@@ -697,6 +699,11 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 	private renderCodeCitationsListData(citations: IChatCodeCitations, context: IChatContentPartRenderContext, templateData: IChatListItemTemplate): ChatCodeCitationContentPart {
 		const citationsPart = this.instantiationService.createInstance(ChatCodeCitationContentPart, citations, context);
 		return citationsPart;
+	}
+
+	private renderToolTypeError(error: IAideAgentToolTypeError, context: IChatContentPartRenderContext, templateData: IChatListItemTemplate) {
+		const warningPart = this.instantiationService.createInstance(ChatWarningContentPart, 'error', new MarkdownString(error.message), this.renderer);
+		return warningPart;
 	}
 
 	private renderProgressTask(task: IChatTask, templateData: IChatListItemTemplate, context: IChatContentPartRenderContext): IChatContentPart | undefined {

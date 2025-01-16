@@ -29,7 +29,7 @@ import { CONTEXT_CHAT_IS_PLAN_VISIBLE, CONTEXT_CHAT_LAST_EXCHANGE_COMPLETE } fro
 import { HunkData } from './aideAgentEditingSession.js';
 import { ChatRequestTextPart, IParsedChatRequest, reviveParsedChatRequest } from './aideAgentParserTypes.js';
 import { AideAgentPlanModel, IAideAgentPlanModel } from './aideAgentPlanModel.js';
-import { ChatAgentVoteDirection, ChatAgentVoteDownReason, IAideAgentPlanProgressContent, IAideAgentPlanStep, IChatAgentMarkdownContentWithVulnerability, IChatCodeCitation, IChatCodeEdit, IChatCommandButton, IChatConfirmation, IChatContentInlineReference, IChatContentReference, IChatFollowup, IChatLocationData, IChatMarkdownContent, IChatProgress, IChatProgressMessage, IChatResponseCodeblockUriPart, IChatResponseProgressFileTreeData, IChatTask, IChatTextEdit, IChatTreeData, IChatUsedContext, IChatWarningMessage, isIUsedContext } from './aideAgentService.js';
+import { ChatAgentVoteDirection, ChatAgentVoteDownReason, IAideAgentPlanProgressContent, IAideAgentPlanStep, IAideAgentToolTypeError, IChatAgentMarkdownContentWithVulnerability, IChatCodeCitation, IChatCodeEdit, IChatCommandButton, IChatConfirmation, IChatContentInlineReference, IChatContentReference, IChatFollowup, IChatLocationData, IChatMarkdownContent, IChatProgress, IChatProgressMessage, IChatResponseCodeblockUriPart, IChatResponseProgressFileTreeData, IChatTask, IChatTextEdit, IChatTreeData, IChatUsedContext, IChatWarningMessage, isIUsedContext } from './aideAgentService.js';
 import { IChatRequestVariableValue } from './aideAgentVariables.js';
 
 export function isRequestModel(item: unknown): item is IChatRequestModel {
@@ -102,6 +102,7 @@ export type IChatProgressResponseContent =
 	| IChatTask
 	| IChatTextEditGroup
 	| IChatConfirmation
+	| IAideAgentToolTypeError
 	| IAideAgentPlanProgressContent;
 
 export type IChatProgressRenderableResponseContent = Exclude<IChatProgressResponseContent, IChatContentInlineReference | IChatAgentMarkdownContentWithVulnerability | IChatResponseCodeblockUriPart>;
@@ -299,7 +300,6 @@ export class Response extends Disposable implements IResponse {
 				}
 				this._updateRepr(false);
 			});
-
 		} else {
 			this._responseParts.push(progress);
 			this._updateRepr(quiet);
@@ -332,6 +332,8 @@ export class Response extends Disposable implements IResponse {
 				return part.description.value;
 			} else if (part.kind === 'stage') {
 				return '';
+			} else if (part.kind === 'toolTypeError') {
+				return part.message;
 			} else {
 				return part.content.value;
 			}
@@ -1113,7 +1115,8 @@ export class ChatModel extends Disposable implements IChatModel {
 			progress.kind === 'warning' ||
 			progress.kind === 'progressTask' ||
 			progress.kind === 'confirmation' ||
-			progress.kind === 'stage'
+			progress.kind === 'stage' ||
+			progress.kind === 'toolTypeError'
 		) {
 			response.updateContent(progress, quiet);
 		} else if (progress.kind === 'usedContext' || progress.kind === 'reference') {
