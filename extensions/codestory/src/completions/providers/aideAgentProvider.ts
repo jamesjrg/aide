@@ -506,6 +506,8 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 		};
 
 		for await (const event of asyncIterable) {
+
+			console.log('[debug events]', event);
 			// now we ping the sidecar that the probing needs to stop
 
 			if ('keep_alive' in event) {
@@ -592,6 +594,15 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 					}
 				} else if (event.event.FrameworkEvent.ToolCallError) {
 					responseStream.stream.toolTypeError({ message: event.event.FrameworkEvent.ToolCallError.error_string });
+					responseStream.stream.stage({ message: 'Error' });
+					const openStreams = this.responseStreamCollection.getAllResponseStreams();
+					for (const stream of openStreams) {
+						this.closeAndRemoveResponseStream(sessionId, stream.exchangeId);
+					}
+					return;
+				} else if (event.event.FrameworkEvent.ToolNotFound) {
+					// Todo (@g-danna @theskcd) make the tool not found error more descriptive and use its own type
+					responseStream.stream.toolTypeError({ message: 'An LLM error occurred, please try again later.' });
 					responseStream.stream.stage({ message: 'Error' });
 					const openStreams = this.responseStreamCollection.getAllResponseStreams();
 					for (const stream of openStreams) {
