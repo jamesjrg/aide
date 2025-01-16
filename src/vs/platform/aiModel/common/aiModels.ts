@@ -6,6 +6,7 @@
 import { CancellationToken } from '../../../base/common/cancellation.js';
 import { Event } from '../../../base/common/event.js';
 import { IDisposable } from '../../../base/common/lifecycle.js';
+import { AgentMode } from '../../aideAgent/common/model.js';
 import { createDecorator } from '../../instantiation/common/instantiation.js';
 
 export const humanReadableModelConfigKey: Record<string, string> = {
@@ -128,6 +129,7 @@ export interface IAIModelSelectionService {
 	validateModelConfiguration(data: IModelSelectionSettings, token: CancellationToken): Promise<IModelSelectionValidationResponse>;
 	validateCurrentModelSelection(): Promise<IModelSelectionValidationResponse>;
 	checkIfModelIdIsTaken(modelId: string): Promise<[boolean, takenModel: ILanguageModelItem]>;
+	checkIfCurrentModelSelectionSupportsAgenticFeatures(mode: AgentMode): Promise<{ supportsAgenticFeatures: boolean; currentModel: ILanguageModelItem }>;
 	getDefaultModelSelectionContent(): string;
 	getModelSelectionSettings(): Promise<IModelSelectionSettings>;
 	getValidatedModelSelectionSettings(): Promise<IModelSelectionSettings>;

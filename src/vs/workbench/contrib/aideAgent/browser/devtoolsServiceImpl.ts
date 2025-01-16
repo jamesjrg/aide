@@ -23,7 +23,7 @@ import { localize } from '../../../../nls.js';
 import { INotificationService, Severity } from '../../../../platform/notification/common/notification.js';
 import { IOpenerService } from '../../../../platform/opener/common/opener.js';
 import { ChatWidget } from './aideAgentWidget.js';
-import { AgentMode } from '../common/aideAgentModel.js';
+import { AgentMode } from '../../../../platform/aideAgent/common/model.js';
 
 export class DevtoolsService extends Disposable implements IDevtoolsService {
 	declare _serviceBrand: undefined;

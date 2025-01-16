@@ -16,6 +16,7 @@ import { equalsIgnoreCase } from '../../../../base/common/strings.js';
 import { ThemeIcon } from '../../../../base/common/themables.js';
 import { URI } from '../../../../base/common/uri.js';
 import { Command, ProviderResult } from '../../../../editor/common/languages.js';
+import { AgentMode } from '../../../../platform/aideAgent/common/model.js';
 import { ContextKeyExpr, IContextKey, IContextKeyService } from '../../../../platform/contextkey/common/contextkey.js';
 import { ExtensionIdentifier } from '../../../../platform/extensions/common/extensions.js';
 import { createDecorator } from '../../../../platform/instantiation/common/instantiation.js';
@@ -24,7 +25,7 @@ import { IProductService } from '../../../../platform/product/common/productServ
 import { asJson, IRequestService } from '../../../../platform/request/common/request.js';
 import { IStorageService, StorageScope, StorageTarget } from '../../../../platform/storage/common/storage.js';
 import { CONTEXT_CHAT_ENABLED, CONTEXT_CHAT_PANEL_PARTICIPANT_REGISTERED } from './aideAgentContextKeys.js';
-import { AgentMode, AgentScope, IChatProgressResponseContent, IChatRequestVariableData, ISerializableChatAgentData } from './aideAgentModel.js';
+import { AgentScope, IChatProgressResponseContent, IChatRequestVariableData, ISerializableChatAgentData } from './aideAgentModel.js';
 import { IRawChatCommandContribution, RawChatParticipantLocation } from './aideAgentParticipantContribTypes.js';
 import { IChatFollowup, IChatLocationData, IChatResponseErrorDetails, IChatTaskDto } from './aideAgentService.js';
 
