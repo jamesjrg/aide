@@ -168,7 +168,7 @@ type FrameworkEvent = {
 	ToolUseDetected: ToolUseDetectedEvent;
 	ToolThinking: ToolThinkingEvent;
 	ToolNotFound: ToolNotFoundEvent;
-	ToolTypeError: ToolTypeErrorEvent;
+	ToolCallError: ToolTypeErrorEvent;
 	ToolTypeFound: ToolTypeFoundEvent;
 	ToolParameterFound: ToolParameterFoundEvent;
 	ToolOutput: ToolOutputEvent;
