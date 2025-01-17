@@ -30,6 +30,7 @@ import { ChatAgentLocation, IAideAgentAgentService } from '../common/aideAgentAg
 import { ChatModelInitState, IChatModel } from '../common/aideAgentModel.js';
 import { CHAT_PROVIDER_ID } from '../common/aideAgentParticipantContribTypes.js';
 import { IAideAgentService } from '../common/aideAgentService.js';
+import { IDevtoolsService } from '../common/devtoolsService.js';
 import { ChatWidget, IChatViewState } from './aideAgentWidget.js';
 
 interface IViewPaneState extends IChatViewState {
@@ -67,8 +68,10 @@ export class ChatViewPane extends ViewPane {
 		@IAideAgentService private readonly chatService: IAideAgentService,
 		@IAideAgentAgentService private readonly chatAgentService: IAideAgentAgentService,
 		@ILogService private readonly logService: ILogService,
+		@IDevtoolsService devoolsService: IDevtoolsService
 	) {
 		super(options, keybindingService, contextMenuService, configurationService, contextKeyService, viewDescriptorService, instantiationService, openerService, themeService, telemetryService, hoverService);
+		devoolsService.initialize();
 
 		this._pinnedContextWidget = this._register(this.instantiationService.createInstance(PinnedContextWidget));
 		this._register(this._pinnedContextWidget.onDidChangeHeight(() => {
