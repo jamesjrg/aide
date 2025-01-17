@@ -141,7 +141,8 @@ export class DevtoolsService extends Disposable implements IDevtoolsService {
 		}
 		// This can be used as a proxy if the user has opened the browser preview
 		if (this.status === DevtoolsStatus.DevtoolsConnected) {
-			this.aideWidget.input.setMode(AgentMode.Agentic);
+			const widget = this.getWidget();
+			widget.input.setMode(AgentMode.Agentic);
 		}
 		this._onDidChangeStatus.fire(this.status);
 	}
