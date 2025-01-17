@@ -755,6 +755,7 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 						responseStream?.stream.stage({ message: 'Planning' });
 					} else if (editsState === 'Cancelled') {
 						responseStream?.stream.stage({ message: 'Cancelled' });
+						this.markLastMessageAsComplete(sessionId, exchangeId);
 					} else if (editsState === 'MarkedComplete') {
 						responseStream?.stream.stage({ message: 'Complete' });
 						this.closeAndRemoveResponseStream(sessionId, exchangeId);
@@ -771,6 +772,7 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 						responseStream?.stream.stage({ message: 'Editing' });
 					} else if (editsState === 'Cancelled') {
 						responseStream?.stream.stage({ message: 'Cancelled' });
+						this.markLastMessageAsComplete(sessionId, exchangeId);
 					} else if (editsState === 'MarkedComplete') {
 						responseStream?.stream.stage({ message: 'Complete' });
 						this.closeAndRemoveResponseStream(sessionId, exchangeId);
@@ -786,6 +788,7 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 						responseStream?.stream.stage({ message: 'Review' });
 					} else if (executionState === 'Cancelled') {
 						responseStream?.stream.stage({ message: 'Cancelled' });
+						this.markLastMessageAsComplete(sessionId, exchangeId);
 					}
 					continue;
 				}
@@ -795,6 +798,18 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 				}
 			}
 		}
+	}
+
+	// TODO (@g-danna, @theskcd) workaround to close the message visually but keep
+	// the stream open for whatever reason
+	private markLastMessageAsComplete(sessionId: string, exchangeId: string) {
+		const responseStreamIdentifier: ResponseStreamIdentifier = { sessionId, exchangeId };
+		const responseStream = this.responseStreamCollection.getResponseStream(responseStreamIdentifier);
+		responseStream?.stream.markLastMessageAsComplete();
+
+		// Clean up the thinking text tracking
+		const key = `${sessionId}-${exchangeId}`;
+		this.lastThinkingText.delete(key);
 	}
 
 	private closeAndRemoveResponseStream(sessionId: string, exchangeId: string) {

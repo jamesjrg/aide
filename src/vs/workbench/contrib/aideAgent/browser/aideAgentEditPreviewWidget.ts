@@ -17,6 +17,7 @@ import { AideAgentCodeEditsContentPart, CodeEditsPool } from './aideAgentCodeEdi
 import './media/aideAgentEditPreviewWidget.css';
 
 const defaultIconClasses = ThemeIcon.asClassNameArray(Codicon.symbolEvent);
+const cancelledIconClasses = ThemeIcon.asClassNameArray(Codicon.close);
 const errorIconClasses = ThemeIcon.asClassNameArray(Codicon.error);
 const progressIconClasses = ThemeIcon.asClassNameArray(ThemeIcon.modify(Codicon.sync, 'spin'));
 
@@ -98,6 +99,9 @@ export class AideAgentEditPreviewWidget extends Disposable {
 		this._elements.icon.removeAttribute('class'); // Clear existing classes
 		if (message === 'Complete') {
 			this._elements.icon.classList.add(...defaultIconClasses);
+			this.isProgressing = false;
+		} else if (message === 'Cancelled') {
+			this._elements.icon.classList.add(...cancelledIconClasses);
 			this.isProgressing = false;
 		} else if (message === 'Error') {
 			this._elements.icon.classList.add(...errorIconClasses);

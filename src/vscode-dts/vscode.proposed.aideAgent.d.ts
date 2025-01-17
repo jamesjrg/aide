@@ -98,6 +98,7 @@ declare module 'vscode' {
 		step(step: AideAgentPlanStepPart): void;
 		stage(stage: AideAgentProgressStagePart): void;
 		close(): void;
+		markLastMessageAsComplete(): void;
 		toolTypeError(message: AideAgentToolTypeError): void;
 	}
 
