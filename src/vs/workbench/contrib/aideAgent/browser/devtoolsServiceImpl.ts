@@ -22,7 +22,6 @@ import { IDynamicVariable } from '../common/aideAgentVariables.js';
 import { localize } from '../../../../nls.js';
 import { INotificationService, Severity } from '../../../../platform/notification/common/notification.js';
 import { IOpenerService } from '../../../../platform/opener/common/opener.js';
-import { ChatWidget } from './aideAgentWidget.js';
 import { AgentMode } from '../../../../platform/aideAgent/common/model.js';
 
 export class DevtoolsService extends Disposable implements IDevtoolsService {
@@ -86,10 +85,8 @@ export class DevtoolsService extends Disposable implements IDevtoolsService {
 		}
 	}
 
-	private readonly aideWidget: ChatWidget;
-
 	constructor(
-		@IContextKeyService contextKeyService: IContextKeyService,
+		@IContextKeyService private readonly contextKeyService: IContextKeyService,
 		@IViewsService private readonly viewsService: IViewsService,
 		@IFileService private readonly fileService: IFileService,
 		@IEnvironmentService private readonly environmentService: IEnvironmentService,
@@ -97,12 +94,11 @@ export class DevtoolsService extends Disposable implements IDevtoolsService {
 		@INotificationService private readonly notificationService: INotificationService,
 		@IOpenerService private readonly openerService: IOpenerService,
 	) {
-
 		super();
-		this._status = CONTEXT_DEVTOOLS_STATUS.bindTo(contextKeyService);
-		this._isInspecting = CONTEXT_IS_INSPECTING_HOST.bindTo(contextKeyService);
-		this._isFeatureEnabled = CONTEXT_IS_DEVTOOLS_FEATURE_ENABLED.bindTo(contextKeyService);
-		this.aideWidget = this.viewsService.getViewWithId<ChatViewPane>(ChatViewId)!.widget;
+
+		this._status = CONTEXT_DEVTOOLS_STATUS.bindTo(this.contextKeyService);
+		this._isInspecting = CONTEXT_IS_INSPECTING_HOST.bindTo(this.contextKeyService);
+		this._isFeatureEnabled = CONTEXT_IS_DEVTOOLS_FEATURE_ENABLED.bindTo(this.contextKeyService);
 
 		// Check current state of your config at startup:
 		this.updateConfig();
@@ -115,6 +111,19 @@ export class DevtoolsService extends Disposable implements IDevtoolsService {
 				}
 			})
 		);
+	}
+
+	initialize() {
+		// noop
+	}
+
+
+	private getWidget() {
+		const chatViewPane = this.viewsService.getViewWithId<ChatViewPane>(ChatViewId);
+		if (!chatViewPane) {
+			throw new Error(`Chat view pane must be initialized before calling the Devtools service`);
+		}
+		return chatViewPane.widget;
 	}
 
 
@@ -132,22 +141,23 @@ export class DevtoolsService extends Disposable implements IDevtoolsService {
 		}
 		// This can be used as a proxy if the user has opened the browser preview
 		if (this.status === DevtoolsStatus.DevtoolsConnected) {
-			this.aideWidget.input.setMode(AgentMode.Agentic);
+			const widget = this.getWidget();
+			widget.input.setMode(AgentMode.Agentic);
 		}
 		this._onDidChangeStatus.fire(this.status);
 	}
 
 
 	private async addReference(payload: Location | null) {
-
-		const input = this.aideWidget.inputEditor;
+		const widget = this.getWidget();
+		const input = widget.inputEditor;
 		const inputModel = input.getModel();
 
 		if (!inputModel) {
 			return;
 		}
 
-		const dynamicVariablesModel = this.aideWidget.getContrib<ChatDynamicVariableModel>(ChatDynamicVariableModel.ID);
+		const dynamicVariablesModel = widget.getContrib<ChatDynamicVariableModel>(ChatDynamicVariableModel.ID);
 		if (!dynamicVariablesModel) {
 			return;
 		}
