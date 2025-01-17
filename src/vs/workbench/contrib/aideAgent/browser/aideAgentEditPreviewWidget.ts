@@ -17,6 +17,7 @@ import { AideAgentCodeEditsContentPart, CodeEditsPool } from './aideAgentCodeEdi
 import './media/aideAgentEditPreviewWidget.css';
 
 const defaultIconClasses = ThemeIcon.asClassNameArray(Codicon.symbolEvent);
+const errorIconClasses = ThemeIcon.asClassNameArray(Codicon.error);
 const progressIconClasses = ThemeIcon.asClassNameArray(ThemeIcon.modify(Codicon.sync, 'spin'));
 
 export class AideAgentEditPreviewWidget extends Disposable {
@@ -90,14 +91,18 @@ export class AideAgentEditPreviewWidget extends Disposable {
 		this._elements.codeEdits.appendChild(this.editsList.domNode);
 	}
 
+
+
 	updateProgress(message: string) {
 		this.visible = Boolean(message) ? true : false; // Hide if empty string
+		this._elements.icon.removeAttribute('class'); // Clear existing classes
 		if (message === 'Complete') {
-			this._elements.icon.classList.remove(...progressIconClasses);
 			this._elements.icon.classList.add(...defaultIconClasses);
 			this.isProgressing = false;
+		} else if (message === 'Error') {
+			this._elements.icon.classList.add(...errorIconClasses);
+			this.isProgressing = false;
 		} else if (!this.isProgressing) {
-			this._elements.icon.classList.remove(...defaultIconClasses);
 			this._elements.icon.classList.add(...progressIconClasses);
 			this.isProgressing = true;
 		}
