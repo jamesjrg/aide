@@ -24,6 +24,8 @@ import { INotificationService, Severity } from '../../../../platform/notificatio
 import { IOpenerService } from '../../../../platform/opener/common/opener.js';
 import { ChatWidget } from './aideAgentWidget.js';
 import { AgentMode } from '../../../../platform/aideAgent/common/model.js';
+import { IHostService } from '../../../services/host/browser/host.js';
+import { convertBufferToScreenshotVariable } from './contrib/screenshot.js';
 
 export class DevtoolsService extends Disposable implements IDevtoolsService {
 	declare _serviceBrand: undefined;
@@ -96,6 +98,7 @@ export class DevtoolsService extends Disposable implements IDevtoolsService {
 		@IConfigurationService private readonly configurationService: IConfigurationService,
 		@INotificationService private readonly notificationService: INotificationService,
 		@IOpenerService private readonly openerService: IOpenerService,
+		@IHostService private readonly hostService: IHostService,
 	) {
 
 		super();
@@ -139,7 +142,6 @@ export class DevtoolsService extends Disposable implements IDevtoolsService {
 
 
 	private async addReference(payload: Location | null) {
-
 		const input = this.aideWidget.inputEditor;
 		const inputModel = input.getModel();
 
@@ -179,6 +181,11 @@ export class DevtoolsService extends Disposable implements IDevtoolsService {
 			const isLeading = replaceRange.startColumn === 1;
 			// Add leading space if we are not at the very beginning of the text model
 			const output = isLeading ? displayName : ' ' + displayName;
+
+			const screenshot = await this.hostService.getScreenshot();
+			if (screenshot) {
+				this.aideWidget.attachmentModel.addContext(convertBufferToScreenshotVariable(screenshot));
+			}
 
 			const success = input.executeEdits('addReactComponentSource', [{ range: replaceRange, text: output }]);
 			if (success) {
