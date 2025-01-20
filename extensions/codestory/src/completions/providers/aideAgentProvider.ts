@@ -579,6 +579,8 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 						responseStream.stream.reference(vscode.Uri.file(toolParameterInput.field_content_delta));
 					} else if (fieldName === 'instruction' || fieldName === 'result' || fieldName === 'question') {
 						responseStream.stream.markdown(`${toolParameterInput.field_content_delta}\n`);
+						responseStream?.stream.stage({ message: 'Question' });
+						this.markLastMessageAsComplete(sessionId, exchangeId);
 					} else if (fieldName === 'command') {
 						responseStream.stream.markdown(`Running command: \`${toolParameterInput.field_content_delta}\`\n`);
 					} else if (fieldName === 'regex_pattern') {
@@ -602,6 +604,9 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 							if (filePath) {
 								responseStream.stream.reference(vscode.Uri.file(filePath));
 							}
+						} else if (toolUseKey === 'AskFollowupQuestions') {
+							responseStream?.stream.stage({ message: 'Question' });
+							this.markLastMessageAsComplete(sessionId, exchangeId);
 						}
 					}
 				} else if (event.event.FrameworkEvent.ToolCallError) {
