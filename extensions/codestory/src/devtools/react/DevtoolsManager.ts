@@ -26,7 +26,8 @@ export class ReactDevtoolsManager {
 		return this._status;
 	}
 
-	private _insepectedElement: InspectedElementPayload | null = null;
+	// undefined is the default, null is for invalid paths
+	private _insepectedElement: InspectedElementPayload | undefined | null;
 	get inspectedElement() {
 		return this._insepectedElement;
 	}
@@ -50,7 +51,6 @@ export class ReactDevtoolsManager {
 		this._Devtools = Devtools
 			.setStatusListener(this.updateStatus.bind(this))
 			.setDataCallback(this.updateInspectedElement.bind(this))
-			.setDisconnectedCallback(this.onDidDisconnect.bind(this))
 			.setInspectionCallback(this.updateInspectHost.bind(this))
 			.startServer(8097, 'localhost');
 	}
@@ -75,13 +75,6 @@ export class ReactDevtoolsManager {
 		this._cleanupProxy?.();
 		this._cleanupProxy = undefined;
 		this._proxyListenPort = undefined;
-	}
-
-	private onDidDisconnect() {
-		if (this._status === DevtoolsStatus.DevtoolsConnected) {
-			// @g-danna take a look at this again
-			this.updateStatus('Devtools disconnected', DevtoolsStatus.ServerConnected);
-		}
 	}
 
 	private async updateInspectedElement(payload: InspectedElementPayload) {
@@ -162,9 +155,6 @@ export class ReactDevtoolsManager {
 	async proxy(port: number) {
 		if (this._proxyListenPort) {
 			this.cleanupProxy();
-		}
-		if (this.status !== 'server-connected') {
-			throw new Error('Devtools server is not connected, cannot initialize proxy');
 		}
 		const { listenPort, cleanup } = await proxy(port, this._Devtools.currentPort);
 		this._proxyListenPort = listenPort;

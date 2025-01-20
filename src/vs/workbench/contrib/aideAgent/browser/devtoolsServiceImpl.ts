@@ -53,12 +53,12 @@ export class DevtoolsService extends Disposable implements IDevtoolsService {
 		this.notifyStatusChange();
 	}
 
-	private _latestPayload: Location | null = null;
+	private _latestPayload: Location | null | undefined;
 	get latestPayload() {
 		return this._latestPayload;
 	}
 
-	set latestPayload(payload: Location | null) {
+	set latestPayload(payload: Location | null | undefined) {
 		this._latestPayload = payload;
 	}
 
@@ -80,7 +80,7 @@ export class DevtoolsService extends Disposable implements IDevtoolsService {
 	set isInspecting(isInspecting: boolean) {
 		this._isInspecting.set(isInspecting);
 		// Stopped inspecting and we have some payload
-		if (!isInspecting && this._latestPayload) {
+		if (!isInspecting && typeof this._latestPayload !== 'undefined') {
 			this.addReference(this._latestPayload);
 		}
 	}

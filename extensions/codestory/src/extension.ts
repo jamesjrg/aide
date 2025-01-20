@@ -282,6 +282,7 @@ export async function activate(context: vscode.ExtensionContext) {
 	});
 
 	reactDevtoolsManager.onInspectedElementChange((payload) => {
+		console.log({ payload });
 		vscode.devtools.setLatestPayload(payload);
 	});
 
