@@ -220,6 +220,14 @@ export const defaultModelSelectionSettings: IModelSelectionSettings = {
 				type: 'geminipro',
 			}
 		},
+		'deepseek/deepseek-r1': {
+			name: "DeepSeek r1",
+			contextLength: 64000,
+			temperature: 0.2,
+			provider: {
+				'type': 'codestory',
+			}
+		},
 	},
 	providers: {
 		'codestory': {
