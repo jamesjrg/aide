@@ -18,8 +18,12 @@ export class TerminalRegistry {
 	private static nextTerminalId = 1;
 
 	static createTerminal(cwd?: string | vscode.Uri | undefined): TerminalInfo {
+		const id = this.nextTerminalId++;
 		const terminal = vscode.window.createTerminal({
 			cwd,
+			metadata: {
+				codestoryId: id.toString()
+			},
 			name: 'Sidecar',
 			// set common variables here which stop beautiful rendering in the terminal
 			// and force CI like behavior from the tools
@@ -35,7 +39,7 @@ export class TerminalRegistry {
 			terminal,
 			busy: false,
 			lastCommand: '',
-			id: this.nextTerminalId++,
+			id,
 		};
 		this.terminals.push(newInfo);
 		return newInfo;

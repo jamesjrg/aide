@@ -117,6 +117,7 @@ import { IExtHostCSAuthentication } from './extHostCSAuthentication.js';
 import { ExtHostCSEvents } from './extHostCSEvents.js';
 import { ExtHostSidecar } from './extHostSidecar.js';
 import { ExtHostDevtools } from './extHostDevtools.js';
+import { ExtHostAideAgentTerminals } from './extHostAideAgentTerminals.js';
 
 export interface IExtensionRegistries {
 	mine: ExtensionDescriptionRegistry;
@@ -236,6 +237,7 @@ export function createApiFactoryAndRegisterActors(accessor: ServicesAccessor): I
 	const extHostCSEvents = rpcProtocol.set(ExtHostContext.ExtHostCSEvents, new ExtHostCSEvents(rpcProtocol));
 	const extHostSidecar = rpcProtocol.set(ExtHostContext.ExtHostSidecar, new ExtHostSidecar(rpcProtocol));
 	const extHostDevtools = rpcProtocol.set(ExtHostContext.ExtHostDevtools, new ExtHostDevtools(rpcProtocol));
+	const extHostAideAgentTerminals = rpcProtocol.set(ExtHostContext.ExtHostAideAgentTerminals, new ExtHostAideAgentTerminals(rpcProtocol));
 	const extHostEmbeddings = rpcProtocol.set(ExtHostContext.ExtHostEmbeddings, new ExtHostEmbeddings(rpcProtocol));
 
 	// Check that no named customers are missing
@@ -1650,6 +1652,14 @@ export function createApiFactoryAndRegisterActors(accessor: ServicesAccessor): I
 			},
 		};
 
+		// namespace: devtools
+		const aideAgentTerminals: typeof vscode.aideAgentTerminals = {
+			showTerminal(id) {
+				checkProposedApiEnabled(extension, 'aideAgentTerminals');
+				return extHostAideAgentTerminals.showTerminal(id);
+			},
+		};
+
 
 		// eslint-disable-next-line local/code-no-dangerous-type-assertions
 		return <typeof vscode>{
@@ -1675,6 +1685,7 @@ export function createApiFactoryAndRegisterActors(accessor: ServicesAccessor): I
 			scm,
 			sidecar,
 			devtools,
+			aideAgentTerminals,
 			speech,
 			tasks,
 			tests,

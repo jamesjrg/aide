@@ -139,6 +139,7 @@ export class MainThreadTerminalService implements MainThreadTerminalServiceShape
 	public async $createTerminal(extHostTerminalId: string, launchConfig: TerminalLaunchConfig): Promise<void> {
 		const shellLaunchConfig: IShellLaunchConfig = {
 			name: launchConfig.name,
+			metadata: launchConfig.metadata,
 			executable: launchConfig.shellPath,
 			args: launchConfig.shellArgs,
 			cwd: typeof launchConfig.cwd === 'string' ? launchConfig.cwd : URI.revive(launchConfig.cwd),

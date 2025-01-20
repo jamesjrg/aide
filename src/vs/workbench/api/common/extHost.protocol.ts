@@ -92,6 +92,7 @@ import { IFileQueryBuilderOptions, ITextQueryBuilderOptions } from '../../servic
 import * as search from '../../services/search/common/search.js';
 import { TextSearchCompleteMessage } from '../../services/search/common/searchExtTypes.js';
 import { ISaveProfileResult } from '../../services/userDataProfile/common/userDataProfile.js';
+import { ExtHostAideAgentTerminals } from './extHostAideAgentTerminals.js';
 import { TerminalCompletionItem, TerminalCompletionList, TerminalShellExecutionCommandLineConfidence } from './extHostTypes.js';
 import * as tasks from './shared/tasks.js';
 
@@ -535,6 +536,7 @@ export type ExtHostTerminalIdentifier = number | string;
 
 export interface TerminalLaunchConfig {
 	name?: string;
+	metadata?: Record<string, string>;
 	shellPath?: string;
 	shellArgs?: string[] | string;
 	cwd?: string | UriComponents;
@@ -3066,6 +3068,12 @@ export interface MainThreadDevtoolsShape {
 	$setIsInspecting(isInspecting: boolean): void;
 }
 
+export interface ExtHostAideAgentTerminalsShape { }
+
+export interface MainThreadAideAgentTerminalsShape {
+	$showTerminal(id: string): void;
+}
+
 // --- proxy identifiers
 
 export const MainContext = {
@@ -3148,6 +3156,7 @@ export const MainContext = {
 	MainThreadCSEvents: createProxyIdentifier<MainThreadCSEventsShape>('MainThreadCSEvents'),
 	MainThreadSidecar: createProxyIdentifier<MainThreadSidecarShape>('MainThreadSidecar'),
 	MainThreadDevtools: createProxyIdentifier<MainThreadDevtoolsShape>('MainThreadDevtools'),
+	MainThreadAideAgentTerminals: createProxyIdentifier<MainThreadAideAgentTerminalsShape>('MainThreadAideAgentTerminals'),
 };
 
 export const ExtHostContext = {
@@ -3227,4 +3236,5 @@ export const ExtHostContext = {
 	ExtHostCSEvents: createProxyIdentifier<ExtHostCSEventsShape>('ExtHostCSEvents'),
 	ExtHostSidecar: createProxyIdentifier<ExtHostSidecarShape>('ExtHostSidecar'),
 	ExtHostDevtools: createProxyIdentifier<ExtHostDevtoolsShape>('ExtHostDevtools'),
+	ExtHostAideAgentTerminals: createProxyIdentifier<ExtHostAideAgentTerminals>('ExtHostAideAgentTerminals'),
 };

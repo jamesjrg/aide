@@ -30,6 +30,7 @@ import { HunkData } from './aideAgentEditingSession.js';
 import { ChatRequestTextPart, IParsedChatRequest, reviveParsedChatRequest } from './aideAgentParserTypes.js';
 import { AideAgentPlanModel, IAideAgentPlanModel } from './aideAgentPlanModel.js';
 import { ChatAgentVoteDirection, ChatAgentVoteDownReason, IAideAgentPlanProgressContent, IAideAgentPlanStep, IAideAgentToolTypeError, IChatAgentMarkdownContentWithVulnerability, IChatCodeCitation, IChatCodeEdit, IChatCommandButton, IChatConfirmation, IChatContentInlineReference, IChatContentReference, IChatFollowup, IChatLocationData, IChatMarkdownContent, IChatProgress, IChatProgressMessage, IChatResponseCodeblockUriPart, IChatResponseProgressFileTreeData, IChatTask, IChatTextEdit, IChatTreeData, IChatUsedContext, IChatWarningMessage, isIUsedContext } from './aideAgentService.js';
+import { IAideAgentTerminalService } from './aideAgentTerminalService.js';
 import { IChatRequestVariableValue } from './aideAgentVariables.js';
 
 export function isRequestModel(item: unknown): item is IChatRequestModel {
@@ -890,8 +891,14 @@ export class ChatModel extends Disposable implements IChatModel {
 		@IAideAgentAgentService private readonly chatAgentService: IAideAgentAgentService,
 		@IAideAgentCodeEditingService private readonly aideAgentCodeEditingService: IAideAgentCodeEditingService,
 		@IInstantiationService private readonly instantiationService: IInstantiationService,
+		@IAideAgentTerminalService private readonly aideAgentTerminalService: IAideAgentTerminalService
 	) {
 		super();
+
+		// we could pass the terminal to show output and name
+		this.aideAgentTerminalService.onDidAgentAddTerminal(() => {
+			console.log('terminal added by agent');
+		});
 
 		this._isImported = (!!initialData && !isSerializableSessionData(initialData)) || (initialData?.isImported ?? false);
 		this._sessionId = (isSerializableSessionData(initialData) && initialData.sessionId) || generateUuid();
