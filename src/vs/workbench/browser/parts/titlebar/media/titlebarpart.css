@@ -100,25 +100,24 @@
 
 
 /* Window title text */
-.monaco-workbench .part.titlebar > .titlebar-container > .titlebar-left > .window-title {
-	order: 4;
+.monaco-workbench .part.titlebar > .titlebar-container > .titlebar-center > .window-title {
 	flex: 0 1 auto;
 	font-size: 12px;
 	font-weight: 600;
 	overflow: hidden;
 	white-space: nowrap;
 	text-overflow: ellipsis;
-	margin-left: 12px;
-	margin-right: 12px;
+	margin-left: auto;
+	margin-right: auto;
 }
 
-.monaco-workbench.web .part.titlebar > .titlebar-container > .titlebar-left > .window-title,
-.monaco-workbench.windows .part.titlebar > .titlebar-container > .titlebar-left > .window-title,
-.monaco-workbench.linux .part.titlebar > .titlebar-container > .titlebar-left > .window-title {
+.monaco-workbench.web .part.titlebar > .titlebar-container > .titlebar-center > .window-title,
+.monaco-workbench.windows .part.titlebar > .titlebar-container > .titlebar-center > .window-title,
+.monaco-workbench.linux .part.titlebar > .titlebar-container > .titlebar-center > .window-title {
 	cursor: default;
 }
 
-.monaco-workbench.linux .part.titlebar > .titlebar-container > .titlebar-left > .window-title {
+.monaco-workbench.linux .part.titlebar > .titlebar-container > .titlebar-center > .window-title {
 	font-size: inherit;
 	/* see #55435 */
 }
@@ -524,12 +523,4 @@
 
 .monaco-workbench .part.titlebar > .titlebar-container > .titlebar-right > :is(.codestory-action-toolbar-container, .rageShake-action-toolbar-container) .monaco-action-bar .actions-container .action-item:has(> .action-label.codicon-warning.checked) {
 	background: var(--vscode-actionBar-toggledBackground) !important;
-}
-
-.monaco-workbench .part.titlebar .window-controls-container .window-icon {
-	color: var(--vscode-titleBar-activeForeground);
-}
-
-.monaco-workbench .part.titlebar.inactive .window-controls-container .window-icon {
-	color: var(--vscode-titleBar-inactiveForeground);
 }
