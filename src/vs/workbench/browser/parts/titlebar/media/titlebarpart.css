@@ -522,7 +522,7 @@
 	font-weight: 600;
 }
 
-.monaco-workbench .part.titlebar > .titlebar-container > .titlebar-right > :is(.codestory-action-toolbar-container, .rageShake-action-toolbar-container) .monaco-action-bar .actions-container .action-item:has(> .action-label.checked) {
+.monaco-workbench .part.titlebar > .titlebar-container > .titlebar-right > :is(.codestory-action-toolbar-container, .rageShake-action-toolbar-container) .monaco-action-bar .actions-container .action-item:has(> .action-label.codicon-warning.checked) {
 	background: var(--vscode-actionBar-toggledBackground) !important;
 }
 
