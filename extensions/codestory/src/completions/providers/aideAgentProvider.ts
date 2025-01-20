@@ -463,9 +463,15 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 		const agentMode = event.mode;
 		const variables = event.references;
 
+		// Closure to refactor as little as possible
+		let errored = false;
+		const addError = () => {
+			errored = true;
+		};
+
 		if (event.mode === vscode.AideAgentMode.Chat) {
 			const responseStream = this.sidecarClient.agentSessionChat(prompt, sessionId, exchangeIdForEvent, editorUrl, agentMode, variables, this.currentRepoRef, this.projectContext.labels, workosAccessToken);
-			await this.reportAgentEventsToChat(true, responseStream);
+			await this.reportAgentEventsToChat(true, responseStream, addError);
 		} else if (event.mode === vscode.AideAgentMode.Edit) {
 			// Now lets try to handle the edit event first
 			// there are 2 kinds of edit events:
@@ -474,11 +480,11 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 			// if its selection scope then its agentic
 			if (event.scope === vscode.AideAgentScope.Selection) {
 				const responseStream = await this.sidecarClient.agentSessionAnchoredEdit(prompt, sessionId, exchangeIdForEvent, editorUrl, agentMode, variables, this.currentRepoRef, this.projectContext.labels, workosAccessToken);
-				await this.reportAgentEventsToChat(true, responseStream);
+				await this.reportAgentEventsToChat(true, responseStream, addError);
 			} else {
 				const isWholeCodebase = event.scope === vscode.AideAgentScope.Codebase;
 				const responseStream = await this.sidecarClient.agentSessionPlanStep(prompt, sessionId, exchangeIdForEvent, editorUrl, agentMode, variables, this.currentRepoRef, this.projectContext.labels, isWholeCodebase, workosAccessToken);
-				await this.reportAgentEventsToChat(true, responseStream);
+				await this.reportAgentEventsToChat(true, responseStream, addError);
 			}
 		} else if (event.mode === vscode.AideAgentMode.Plan || event.mode === vscode.AideAgentMode.Agentic) {
 			// For plan generation we have 2 things which can happen:
@@ -487,10 +493,12 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 			// once we have a step of the plan we should stream it along with the edits of the plan
 			// and keep doing that until we are done completely
 			const responseStream = await this.sidecarClient.agentSessionPlanStep(prompt, sessionId, exchangeIdForEvent, editorUrl, agentMode, variables, this.currentRepoRef, this.projectContext.labels, false, workosAccessToken);
-			await this.reportAgentEventsToChat(true, responseStream);
+			await this.reportAgentEventsToChat(true, responseStream, addError);
 		}
-
-		this.csEventHandler.handleNewRequest(event.mode === vscode.AideAgentMode.Agentic ? 'AgenticRequest' : 'ChatRequest');
+		// This we use to track agent usage - only hit this if we didn't fail
+		if (!errored) {
+			this.csEventHandler.handleNewRequest(event.mode === vscode.AideAgentMode.Agentic ? 'AgenticRequest' : 'ChatRequest');
+		}
 	}
 
 	/**
@@ -500,6 +508,7 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 	async reportAgentEventsToChat(
 		editMode: boolean,
 		stream: AsyncIterableIterator<SideCarAgentEvent>,
+		errorCallback?: () => void
 	): Promise<void> {
 		const asyncIterable = {
 			[Symbol.asyncIterator]: () => stream
@@ -598,6 +607,7 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 				} else if (event.event.FrameworkEvent.ToolCallError) {
 					responseStream.stream.toolTypeError({ message: event.event.FrameworkEvent.ToolCallError.error_string });
 					responseStream.stream.stage({ message: 'Error' });
+					errorCallback?.();
 					const openStreams = this.responseStreamCollection.getAllResponseStreams();
 					for (const stream of openStreams) {
 						this.closeAndRemoveResponseStream(sessionId, stream.exchangeId);
@@ -607,6 +617,7 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 					// Todo (@g-danna @theskcd) make the tool not found error more descriptive and use its own type
 					responseStream.stream.toolTypeError({ message: 'An LLM error occurred, please try again later.' });
 					responseStream.stream.stage({ message: 'Error' });
+					errorCallback?.();
 					const openStreams = this.responseStreamCollection.getAllResponseStreams();
 					for (const stream of openStreams) {
 						this.closeAndRemoveResponseStream(sessionId, stream.exchangeId);
