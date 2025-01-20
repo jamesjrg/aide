@@ -63,6 +63,8 @@ class CancellableExchange implements IDisposable {
 	}
 }
 
+const allowedProgressWhenCanceling = new Set<IChatProgress['kind']>(['endResponse', 'stage']);
+
 export class ChatService extends Disposable implements IAideAgentService {
 	declare _serviceBrand: undefined;
 
@@ -370,7 +372,8 @@ export class ChatService extends Disposable implements IAideAgentService {
 	}
 
 	private progressCallback(model: ChatModel, response: ChatResponseModel | undefined, progress: IChatProgress, token: CancellationToken): void {
-		if (token.isCancellationRequested) {
+		// @g-danna I added this to close the response visually even when a cancellation token has been requested
+		if (!allowedProgressWhenCanceling.has(progress.kind) && token.isCancellationRequested) {
 			return;
 		}
 

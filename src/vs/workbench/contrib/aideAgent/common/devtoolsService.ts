@@ -12,6 +12,7 @@ export const IDevtoolsService = createDecorator<IDevtoolsService>('IDevtoolsServ
 export interface IDevtoolsService {
 	_serviceBrand: undefined;
 	status: DevtoolsStatus;
+	initialize(): void;
 	startInspectingHost(): void;
 	stopInspectingHost(): void;
 	onDidTriggerInspectingHostStart: Event<void>;

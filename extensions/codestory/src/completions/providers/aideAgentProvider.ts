@@ -507,7 +507,10 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 
 		for await (const event of asyncIterable) {
 
-			console.log('[debug events]', event);
+			// print debug events if we are in dev mode
+			if (process.env.VSCODE_DEV === '1') {
+				printEventDebug(event);
+			}
 			// now we ping the sidecar that the probing needs to stop
 
 			if ('keep_alive' in event) {
@@ -657,7 +660,7 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 						// response.breakdown({
 						// 	reference: {
 						// 		uri: vscode.Uri.file(symbol_identifier.fs_file_path),
-						// 		name: symbol_identifier.symbol_name,
+						// 		name: symbol	_identifier.symbol_name,
 						// 	}
 						// });
 					}
@@ -752,6 +755,7 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 						responseStream?.stream.stage({ message: 'Planning' });
 					} else if (editsState === 'Cancelled') {
 						responseStream?.stream.stage({ message: 'Cancelled' });
+						this.markLastMessageAsComplete(sessionId, exchangeId);
 					} else if (editsState === 'MarkedComplete') {
 						responseStream?.stream.stage({ message: 'Complete' });
 						this.closeAndRemoveResponseStream(sessionId, exchangeId);
@@ -768,6 +772,7 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 						responseStream?.stream.stage({ message: 'Editing' });
 					} else if (editsState === 'Cancelled') {
 						responseStream?.stream.stage({ message: 'Cancelled' });
+						this.markLastMessageAsComplete(sessionId, exchangeId);
 					} else if (editsState === 'MarkedComplete') {
 						responseStream?.stream.stage({ message: 'Complete' });
 						this.closeAndRemoveResponseStream(sessionId, exchangeId);
@@ -783,6 +788,7 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 						responseStream?.stream.stage({ message: 'Review' });
 					} else if (executionState === 'Cancelled') {
 						responseStream?.stream.stage({ message: 'Cancelled' });
+						this.markLastMessageAsComplete(sessionId, exchangeId);
 					}
 					continue;
 				}
@@ -792,6 +798,18 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 				}
 			}
 		}
+	}
+
+	// TODO (@g-danna, @theskcd) workaround to close the message visually but keep
+	// the stream open for whatever reason
+	private markLastMessageAsComplete(sessionId: string, exchangeId: string) {
+		const responseStreamIdentifier: ResponseStreamIdentifier = { sessionId, exchangeId };
+		const responseStream = this.responseStreamCollection.getResponseStream(responseStreamIdentifier);
+		responseStream?.stream.markLastMessageAsComplete();
+
+		// Clean up the thinking text tracking
+		const key = `${sessionId}-${exchangeId}`;
+		this.lastThinkingText.delete(key);
 	}
 
 	private closeAndRemoveResponseStream(sessionId: string, exchangeId: string) {
@@ -807,5 +825,13 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 
 	dispose() {
 		this.aideAgent.dispose();
+	}
+}
+
+function printEventDebug(event: SideCarAgentEvent) {
+	if ('event' in event) {
+		for (const [eventType, value] of Object.entries(event.event)) {
+			console.info('[debug events]', eventType, value);
+		}
 	}
 }

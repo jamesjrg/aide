@@ -279,6 +279,11 @@ class AideAgentResponseStream {
 
 					return this;
 				},
+				markLastMessageAsComplete() {
+					throwIfDone(this.markLastMessageAsComplete);
+					const dto = typeConvert.ChatResponseClosePart.from();
+					_report(dto);
+				},
 				close() {
 					const dto = typeConvert.ChatResponseClosePart.from();
 					_report(dto);
