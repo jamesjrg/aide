@@ -268,7 +268,7 @@ class OpenSimpleBrowserAction extends Action2 {
 	constructor() {
 		super({
 			id: 'workbench.action.aideAgent.openSimpleBrowser',
-			title: localize2('interactiveSession.openSimpleBrowser.label', "Open browser to inspect devtools"),
+			title: localize2('interactiveSession.openSimpleBrowser.label', "Open preview browser"),
 			precondition: ContextKeyExpr.and(CONTEXT_IS_DEVTOOLS_FEATURE_ENABLED, CONTEXT_CHAT_ENABLED),
 			category: CHAT_CATEGORY,
 			icon: Codicon.browser,
