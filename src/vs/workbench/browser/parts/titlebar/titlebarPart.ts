@@ -502,23 +502,24 @@ export class BrowserTitlebarPart extends Part implements ITitlebarPart {
 				}
 			}
 
+			/*
 			if (isMacintosh && isNative && primaryWindowControlsLocation === 'left') {
 				// macOS native: controls are on the left and the container is not needed to make room
 				// for something, except for web where a custom menu being supported). not putting the
 				// container helps with allowing to move the window when clicking very close to the
 				// window control buttons.
-			} else {
-				this.windowControlsContainer = append(primaryWindowControlsLocation === 'left' ? this.leftContent : this.rightContent, $('div.window-controls-container'));
-				if (isWeb) {
-					// Web: its possible to have control overlays on both sides, for example on macOS
-					// with window controls on the left and PWA controls on the right.
-					append(primaryWindowControlsLocation === 'left' ? this.rightContent : this.leftContent, $('div.window-controls-container'));
-				}
-
-				if (isWCOEnabled()) {
-					this.windowControlsContainer.classList.add('wco-enabled');
-				}
+			} else { */
+			this.windowControlsContainer = append(primaryWindowControlsLocation === 'left' ? this.leftContent : this.rightContent, $('div.window-controls-container'));
+			if (isWeb) {
+				// Web: its possible to have control overlays on both sides, for example on macOS
+				// with window controls on the left and PWA controls on the right.
+				append(primaryWindowControlsLocation === 'left' ? this.rightContent : this.leftContent, $('div.window-controls-container'));
 			}
+
+			if (isWCOEnabled()) {
+				this.windowControlsContainer.classList.add('wco-enabled');
+			}
+			// }
 		}
 
 		// Context menu over title bar: depending on the OS and the location of the click this will either be
