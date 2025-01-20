@@ -23,6 +23,8 @@ import { localize } from '../../../../nls.js';
 import { INotificationService, Severity } from '../../../../platform/notification/common/notification.js';
 import { IOpenerService } from '../../../../platform/opener/common/opener.js';
 import { AgentMode } from '../../../../platform/aideAgent/common/model.js';
+import { IHostService } from '../../../services/host/browser/host.js';
+import { convertBufferToScreenshotVariable } from './contrib/screenshot.js';
 
 export class DevtoolsService extends Disposable implements IDevtoolsService {
 	declare _serviceBrand: undefined;
@@ -93,6 +95,7 @@ export class DevtoolsService extends Disposable implements IDevtoolsService {
 		@IConfigurationService private readonly configurationService: IConfigurationService,
 		@INotificationService private readonly notificationService: INotificationService,
 		@IOpenerService private readonly openerService: IOpenerService,
+		@IHostService private readonly hostService: IHostService,
 	) {
 		super();
 
@@ -189,6 +192,11 @@ export class DevtoolsService extends Disposable implements IDevtoolsService {
 			const isLeading = replaceRange.startColumn === 1;
 			// Add leading space if we are not at the very beginning of the text model
 			const output = isLeading ? displayName : ' ' + displayName;
+
+			const screenshot = await this.hostService.getScreenshot();
+			if (screenshot) {
+				widget.attachmentModel.addContext(convertBufferToScreenshotVariable(screenshot));
+			}
 
 			const success = input.executeEdits('addReactComponentSource', [{ range: replaceRange, text: output }]);
 			if (success) {
