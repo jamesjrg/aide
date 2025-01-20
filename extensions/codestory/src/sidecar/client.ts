@@ -1777,7 +1777,7 @@ export async function convertVSCodeVariableToSidecarHackingForPlan(
 			const base64Data = Buffer.from(imageData).toString('base64');
 			sidecarImages.push({
 				type: 'base64',
-				media_type: value.mimeType,
+				media_type: variable.id === 'screenshot-focused-window' ? 'image/jpeg' : value.mimeType,
 				data: base64Data,
 			});
 		}
@@ -1938,7 +1938,7 @@ async function convertVSCodeVariableToSidecar(
 			const base64Data = Buffer.from(imageData).toString('base64');
 			sidecarImages.push({
 				type: 'base64',
-				media_type: value.mimeType,
+				media_type: variable.id === 'screenshot-focused-window' ? 'image/jpeg' : value.mimeType,
 				data: base64Data,
 			});
 		}
