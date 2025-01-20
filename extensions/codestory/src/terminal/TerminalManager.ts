@@ -155,6 +155,7 @@ export class TerminalManager {
 		console.log('creating new terminal at', cwd);
 
 		const newTerminalInfo = TerminalRegistry.createTerminal(cwd);
+		vscode.aideAgentTerminals.showTerminal(newTerminalInfo.id.toString());
 		console.log('newTerminalInfo', newTerminalInfo);
 		this.terminalIds.add(newTerminalInfo.id);
 		return newTerminalInfo;

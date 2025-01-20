@@ -11,6 +11,7 @@
 		"../../src/vscode-dts/vscode.d.ts",
 		"../../src/vscode-dts/vscode.proposed.aideAgent.d.ts",
 		"../../src/vscode-dts/vscode.proposed.aideGetCodeLensProvider.d.ts",
+		"../../src/vscode-dts/vscode.proposed.aideAgentTerminals.d.ts",
 		"../../src/vscode-dts/vscode.proposed.aideGetCodeLensProvider.d.ts",
 		"../../src/vscode-dts/vscode.proposed.aideGetInlayHintsProvider.d.ts",
 		"../../src/vscode-dts/vscode.proposed.aideGetInlayHintsProvider.d.ts",

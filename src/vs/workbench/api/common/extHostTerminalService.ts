@@ -102,6 +102,7 @@ export class ExtHostTerminal extends Disposable {
 		public _id: ExtHostTerminalIdentifier,
 		private readonly _creationOptions: vscode.TerminalOptions | vscode.ExtensionTerminalOptions,
 		private _name?: string,
+		private _metadata?: Record<string, string>
 	) {
 		super();
 
@@ -112,6 +113,9 @@ export class ExtHostTerminal extends Disposable {
 		this.value = {
 			get name(): string {
 				return that._name || '';
+			},
+			get metadata() {
+				return that._metadata;
 			},
 			get processId(): Promise<number | undefined> {
 				return that._pidPromise;
@@ -175,6 +179,7 @@ export class ExtHostTerminal extends Disposable {
 		}
 		await this._proxy.$createTerminal(this._id, {
 			name: options.name,
+			metadata: options.metadata,
 			shellPath: options.shellPath ?? undefined,
 			shellArgs: options.shellArgs ?? undefined,
 			cwd: options.cwd ?? internalOptions?.cwd ?? undefined,
@@ -200,6 +205,7 @@ export class ExtHostTerminal extends Disposable {
 		}
 		await this._proxy.$createTerminal(this._id, {
 			name: this._name,
+			metadata: this._metadata,
 			isExtensionCustomPtyTerminal: true,
 			icon: iconPath,
 			color: ThemeColor.isThemeColor(color) ? color.id : undefined,

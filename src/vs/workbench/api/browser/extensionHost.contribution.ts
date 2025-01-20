@@ -97,6 +97,7 @@ import './mainThreadAiEmbeddingVector.js';
 import './mainThreadCSEvents.js';
 import './mainThreadSidecar.js';
 import './mainThreadDevtools.js';
+import './mainThreadAideAgentTerminals.js';
 
 export class ExtensionPoints implements IWorkbenchContribution {
 
