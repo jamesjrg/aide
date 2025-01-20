@@ -52,6 +52,7 @@ export class ReactDevtoolsManager {
 			.setStatusListener(this.updateStatus.bind(this))
 			.setDataCallback(this.updateInspectedElement.bind(this))
 			.setInspectionCallback(this.updateInspectHost.bind(this))
+			.setDisconnectedCallback(this.onDidDisconnect.bind(this))
 			.startServer(8097, 'localhost');
 	}
 
@@ -63,6 +64,13 @@ export class ReactDevtoolsManager {
 		this._onStatusChange.fire(status);
 	}
 
+	private onDidDisconnect() {
+		if (this._status === DevtoolsStatus.DevtoolsConnected) {
+			// @g-danna take a look at this again
+			this.updateStatus('Devtools disconnected', DevtoolsStatus.ServerConnected);
+		}
+	}
+
 	private updateInspectHost(isInspecting: boolean) {
 		this._onInspectHostChange.fire(isInspecting);
 	}
@@ -71,14 +79,18 @@ export class ReactDevtoolsManager {
 		if (!this._disconnectedPromise) {
 			this._disconnectedPromise = new DeferredPromise();
 		}
-		this._disconnectedPromise.resolve();
 		this._cleanupProxy?.();
+		// If disconnection is external (e.g.: route change, mark the promise as resolve)
+		this._disconnectedPromise.resolve();
 		this._cleanupProxy = undefined;
 		this._proxyListenPort = undefined;
 	}
 
 	private async updateInspectedElement(payload: InspectedElementPayload) {
 		this._insepectedElement = payload;
+		if (process.env.VSCODE_DEBUG_MODE === 'true') {
+			console.log(payload);
+		}
 		if (payload.type === 'full-data') {
 			const reference = await this.getValidReference(payload);
 			this._onInspectedElementChange.fire(reference);
@@ -155,6 +167,9 @@ export class ReactDevtoolsManager {
 	async proxy(port: number) {
 		if (this._proxyListenPort) {
 			this.cleanupProxy();
+		}
+		if (this.status === 'devtools-connected') {
+			throw new Error('Devtools are already connected, close the preview tab and try again');
 		}
 		const { listenPort, cleanup } = await proxy(port, this._Devtools.currentPort);
 		this._proxyListenPort = listenPort;
