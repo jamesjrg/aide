@@ -161,6 +161,7 @@ export interface IChatAgentRequest {
 	acceptedConfirmationData?: any[];
 	rejectedConfirmationData?: any[];
 	userSelectedModelId?: string;
+	isDevtoolsContext?: boolean;
 }
 
 export interface IChatQuestion {

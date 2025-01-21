@@ -620,6 +620,7 @@ export class ChatService extends Disposable implements IAideAgentService {
 							locationData: request.locationData,
 							acceptedConfirmationData: options?.acceptedConfirmationData,
 							rejectedConfirmationData: options?.rejectedConfirmationData,
+							isDevtoolsContext: model.isDevtoolsContext,
 						} satisfies IChatAgentRequest;
 					};
 

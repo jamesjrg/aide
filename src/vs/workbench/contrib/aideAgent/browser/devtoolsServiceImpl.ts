@@ -212,7 +212,9 @@ export class DevtoolsService extends Disposable implements IDevtoolsService {
 
 		if (payload === null) {
 			this.notifyProjectNotSupported();
-		} else {
+		} else if (widget.viewModel?.model) {
+			widget.viewModel.model.isDevtoolsContext = true;
+
 			const file = await this.fileService.stat(payload.uri);
 			const displayName = `@${file.name}:${payload.range.startLineNumber}-${payload.range.endLineNumber}`;
 			const inputModelFullRange = inputModel.getFullModelRange();

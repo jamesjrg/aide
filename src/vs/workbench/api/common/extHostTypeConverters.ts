@@ -3111,6 +3111,7 @@ export namespace AideAgentRequest {
 			references: variableReferences.map(AideAgentPromptReference.to),
 			location: ChatLocation.to(request.location),
 			location2,
+			isDevtoolsContext: request.isDevtoolsContext,
 		};
 	}
 }
