@@ -781,6 +781,16 @@ export type SidecarGoToDefinitionRequest = {
 	position: SidecarRequestPosition;
 };
 
+export type SidecarListFilesEndpoint = {
+	directory_path: string;
+	is_recursive: boolean;
+};
+
+export type SidecarListFilesOutput = {
+	files: string[];
+	limit_reached: boolean;
+};
+
 export type SidecarExecuteTerminalCommandRequest = {
 	command: string;
 };

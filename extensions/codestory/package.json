@@ -171,6 +171,7 @@
     "@google-cloud/storage": "^7.0.1",
     "diff": "^5.1.0",
     "http-proxy": "^1.18.1",
+    "ignore": "^7.0.3",
     "js-levenshtein": "^1.1.6",
     "lodash": "^4.17.21",
     "lru-cache": "^10.2.0",
