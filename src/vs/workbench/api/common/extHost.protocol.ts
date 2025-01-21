@@ -883,6 +883,7 @@ export type WebviewHandle = string;
 
 export interface WebviewPanelShowOptions {
 	readonly viewColumn?: EditorGroupColumn;
+	readonly inPreview?: boolean;
 	readonly preserveFocus?: boolean;
 }
 
@@ -1006,6 +1007,7 @@ export interface WebviewPanelViewStateData {
 	[handle: string]: {
 		readonly active: boolean;
 		readonly visible: boolean;
+		readonly inPreview: boolean;
 		readonly position: EditorGroupColumn;
 	};
 }

@@ -21,9 +21,11 @@ import { WebviewIconManager, WebviewIcons } from './webviewIconManager.js';
 import { IEditorGroup, IEditorGroupsService } from '../../../services/editor/common/editorGroupsService.js';
 import { ACTIVE_GROUP_TYPE, IEditorService, SIDE_GROUP_TYPE } from '../../../services/editor/common/editorService.js';
 import { WebviewInput, WebviewInputInitInfo } from './webviewEditorInput.js';
+import { IPreviewPartService } from '../../../services/previewPart/browser/previewPartService.js';
+import { PREVIEW_GROUP, PREVIEW_GROUP_TYPE } from '../../../services/previewPart/common/previewService.js';
 
 export interface IWebViewShowOptions {
-	readonly group?: IEditorGroup | GroupIdentifier | ACTIVE_GROUP_TYPE | SIDE_GROUP_TYPE;
+	readonly group?: IEditorGroup | GroupIdentifier | ACTIVE_GROUP_TYPE | SIDE_GROUP_TYPE | PREVIEW_GROUP_TYPE;
 	readonly preserveFocus?: boolean;
 }
 
@@ -74,7 +76,7 @@ export interface IWebviewWorkbenchService {
 	 */
 	revealWebview(
 		webview: WebviewInput,
-		group: IEditorGroup | GroupIdentifier | ACTIVE_GROUP_TYPE | SIDE_GROUP_TYPE,
+		group: IEditorGroup | GroupIdentifier | ACTIVE_GROUP_TYPE | SIDE_GROUP_TYPE | PREVIEW_GROUP_TYPE,
 		preserveFocus: boolean
 	): void;
 
@@ -215,6 +217,7 @@ export class WebviewEditorService extends Disposable implements IWebviewWorkbenc
 	constructor(
 		@IEditorGroupsService editorGroupsService: IEditorGroupsService,
 		@IEditorService private readonly _editorService: IEditorService,
+		@IPreviewPartService private readonly _previewPartService: IPreviewPartService,
 		@IInstantiationService private readonly _instantiationService: IInstantiationService,
 		@IWebviewService private readonly _webviewService: IWebviewService,
 	) {
@@ -289,30 +292,40 @@ export class WebviewEditorService extends Disposable implements IWebviewWorkbenc
 		showOptions: IWebViewShowOptions,
 	): WebviewInput {
 		const webview = this._webviewService.createWebviewOverlay(webviewInitInfo);
+		// here viewType is "mainThreadWebview-<id>"
 		const webviewInput = this._instantiationService.createInstance(WebviewInput, { viewType, name: title, providedId: webviewInitInfo.providedViewType }, webview, this.iconManager);
-		this._editorService.openEditor(webviewInput, {
-			pinned: true,
-			preserveFocus: showOptions.preserveFocus,
-			// preserve pre 1.38 behaviour to not make group active when preserveFocus: true
-			// but make sure to restore the editor to fix https://github.com/microsoft/vscode/issues/79633
-			activation: showOptions.preserveFocus ? EditorActivation.RESTORE : undefined
-		}, showOptions.group);
+
+		if (showOptions.group === PREVIEW_GROUP) {
+			this._previewPartService.openPreview(webviewInput, { preserveFocus: showOptions.preserveFocus });
+		} else {
+			this._editorService.openEditor(webviewInput, {
+				pinned: true,
+				preserveFocus: showOptions.preserveFocus,
+				// preserve pre 1.38 behaviour to not make group active when preserveFocus: true
+				// but make sure to restore the editor to fix https://github.com/microsoft/vscode/issues/79633
+				activation: showOptions.preserveFocus ? EditorActivation.RESTORE : undefined
+			}, showOptions.group);
+		}
 		return webviewInput;
 	}
 
 	public revealWebview(
 		webview: WebviewInput,
-		group: IEditorGroup | GroupIdentifier | ACTIVE_GROUP_TYPE | SIDE_GROUP_TYPE,
+		group: IEditorGroup | GroupIdentifier | ACTIVE_GROUP_TYPE | SIDE_GROUP_TYPE | PREVIEW_GROUP_TYPE,
 		preserveFocus: boolean
 	): void {
 		const topLevelEditor = this.findTopLevelEditorForWebview(webview);
 
-		this._editorService.openEditor(topLevelEditor, {
-			preserveFocus,
-			// preserve pre 1.38 behaviour to not make group active when preserveFocus: true
-			// but make sure to restore the editor to fix https://github.com/microsoft/vscode/issues/79633
-			activation: preserveFocus ? EditorActivation.RESTORE : undefined
-		}, group);
+		if (group === PREVIEW_GROUP) {
+			this._previewPartService.openPreview(webview, { preserveFocus });
+		} else {
+			this._editorService.openEditor(topLevelEditor, {
+				preserveFocus,
+				// preserve pre 1.38 behaviour to not make group active when preserveFocus: true
+				// but make sure to restore the editor to fix https://github.com/microsoft/vscode/issues/79633
+				activation: preserveFocus ? EditorActivation.RESTORE : undefined
+			}, group);
+		}
 	}
 
 	private findTopLevelEditorForWebview(webview: WebviewInput): EditorInput {

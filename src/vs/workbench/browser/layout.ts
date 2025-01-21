@@ -48,8 +48,11 @@ import { AuxiliaryBarPart } from './parts/auxiliarybar/auxiliaryBarPart.js';
 import { ITelemetryService } from '../../platform/telemetry/common/telemetry.js';
 import { IAuxiliaryWindowService } from '../services/auxiliaryWindow/browser/auxiliaryWindowService.js';
 import { CodeWindow, mainWindow } from '../../base/browser/window.js';
-import { OverlayedPart } from './overlayedPart.js';
 import { IBottomBarPartService } from '../services/bottomBarPart/browser/bottomBarPartService.js';
+import { IPreviewPartService } from '../services/previewPart/browser/previewPartService.js';
+// @g-danna maybe this should be homogenous to the serializable view
+import { IOverlayedView, OverlayedPart } from './overlayedPart.js';
+
 
 //#region Layout Implementation
 
@@ -268,7 +271,7 @@ export abstract class Layout extends Disposable implements IWorkbenchLayoutServi
 	private activityBarPartView!: ISerializableView;
 	private sideBarPartView!: ISerializableView;
 	private panelPartView!: ISerializableView;
-	// private bottomBarPartViewDeprecated!: IOverlayedView;
+	private previewPartView!: IOverlayedView; // TODO @g-danna make this serializable
 	private bottomBarPartView!: ISerializableView;
 	private auxiliaryBarPartView!: ISerializableView;
 	private editorPartView!: IObservableView;
@@ -329,6 +332,7 @@ export abstract class Layout extends Disposable implements IWorkbenchLayoutServi
 		this.titleService = accessor.get(ITitleService);
 		this.notificationService = accessor.get(INotificationService);
 		this.statusBarService = accessor.get(IStatusbarService);
+		accessor.get(IPreviewPartService);
 		accessor.get(IBannerService);
 		accessor.get(IBottomBarPartService);
 
@@ -1524,9 +1528,9 @@ export abstract class Layout extends Disposable implements IWorkbenchLayoutServi
 		const titleBar = this.getPart(Parts.TITLEBAR_PART);
 		const bannerPart = this.getPart(Parts.BANNER_PART);
 		const editorPart = this.getPart(Parts.EDITOR_PART);
+		const preview = this.getOverlayedPart(OverlayedParts.PREVIEW_PART);
 		const activityBar = this.getPart(Parts.ACTIVITYBAR_PART);
 		const panelPart = this.getPart(Parts.PANEL_PART);
-		// const bottomBarDeprecated = this.getOverlayedPart(OverlayedParts.BOTTOMBAR_PART_DEPRECATED);
 		const bottomBar = this.getPart(Parts.BOTTOMBAR_PART);
 		const auxiliaryBarPart = this.getPart(Parts.AUXILIARYBAR_PART);
 		const sideBar = this.getPart(Parts.SIDEBAR_PART);
@@ -1539,6 +1543,7 @@ export abstract class Layout extends Disposable implements IWorkbenchLayoutServi
 		this.sideBarPartView = sideBar;
 		this.activityBarPartView = activityBar;
 		this.editorPartView = editorPart;
+		this.previewPartView = preview;
 		this.bottomBarPartView = bottomBar;
 		this.panelPartView = panelPart;
 		this.auxiliaryBarPartView = auxiliaryBarPart;
@@ -1549,10 +1554,10 @@ export abstract class Layout extends Disposable implements IWorkbenchLayoutServi
 			[Parts.BANNER_PART]: this.bannerPartView,
 			[Parts.TITLEBAR_PART]: this.titleBarPartView,
 			[Parts.EDITOR_PART]: this.editorPartView,
+			[OverlayedParts.PREVIEW_PART]: this.previewPartView,
 			[Parts.PANEL_PART]: this.panelPartView,
 			[Parts.SIDEBAR_PART]: this.sideBarPartView,
 			[Parts.STATUSBAR_PART]: this.statusBarPartView,
-			// [OverlayedParts.BOTTOMBAR_PART_DEPRECATED]: this.bottomBarPartViewDeprecated,
 			[Parts.BOTTOMBAR_PART]: this.bottomBarPartView,
 			[Parts.AUXILIARYBAR_PART]: this.auxiliaryBarPartView
 		};
@@ -1626,20 +1631,21 @@ export abstract class Layout extends Disposable implements IWorkbenchLayoutServi
 			this.workbenchGrid.layout(this._mainContainerDimension.width, this._mainContainerDimension.height);
 			this.initialized = true;
 
-			/* // Deprecated: Add aide controls
+			// Add preview
 			try {
 				const editorParentElement = this.editorPartView.element.parentElement;
 				if (editorParentElement) {
-					editorParentElement.insertBefore(this.bottomBarPartView.element, this.editorPartView.element.nextSibling);
+					// Should this be append?
+					editorParentElement.prepend(this.previewPartView.element);
 				}
-				this.arrangeBottomBar();
+				this.arrangePreviewOverlay();
 				this._register(this.editorPartView.onDidContentSizeChange(() => {
-					this.arrangeBottomBar();
+					this.arrangePreviewOverlay();
 				}));
 
 			} catch (error) {
 				console.error(`Could not initialize Aide controls: ${error}`);
-			} */
+			}
 
 			// Emit as event
 			this.handleContainerDidLayout(this.mainContainer, this._mainContainerDimension);
@@ -2300,16 +2306,11 @@ export abstract class Layout extends Disposable implements IWorkbenchLayoutServi
 		this.workbenchGrid.setViewVisible(this.titleBarPartView, shouldShowCustomTitleBar(this.configurationService, mainWindow, this.state.runtime.menuBar.toggled));
 	}
 
-	/*
-	private arrangeBottomBar() {
-		// TODO(@g-danna) Make an abstraction about overlayed part positioning?
-		const margin = 14; // Allow for scrollbars
+
+	private arrangePreviewOverlay() {
 		const editorDomRect = this.editorPartView.element.getBoundingClientRect();
-		this.bottomBarPartView.setAvailableSize({ width: editorDomRect.width - margin * 2, height: editorDomRect.height - margin * 2 });
-		this.bottomBarPartView.setPosition({ bottom: margin, left: margin });
-		this.bottomBarPartView.layout();
+		this.previewPartView.layout(editorDomRect.width, editorDomRect.height);
 	}
-	*/
 
 	private arrangeEditorNodes(nodes: { editor: ISerializedNode; sideBar?: ISerializedNode; auxiliaryBar?: ISerializedNode }, availableHeight: number, availableWidth: number): ISerializedNode {
 		if (!nodes.sideBar && !nodes.auxiliaryBar) {

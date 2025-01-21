@@ -557,6 +557,8 @@ export class EditorService extends Disposable implements EditorServiceImpl {
 			}
 		}
 
+		// @g-danna I will need to reuse this logic for my overlay preview service
+
 		// Override is disabled or did not apply: fallback to default
 		if (!typedEditor) {
 			typedEditor = isEditorInput(editor) ? editor : await this.textEditorService.resolveTextEditor(editor);

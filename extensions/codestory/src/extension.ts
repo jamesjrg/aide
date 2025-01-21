@@ -324,7 +324,7 @@ export async function activate(context: vscode.ExtensionContext) {
 				const proxyedPort = await reactDevtoolsManager.proxy(Number(parsedUrl.port));
 				const proxyedUrl = new URL(parsedUrl);
 				proxyedUrl.port = proxyedPort.toString();
-				simpleBrowserManager.show(proxyedUrl.href, { originalUrl: url });
+				simpleBrowserManager.show(proxyedUrl.href, { originalUrl: url, inPreview: true });
 			} else {
 				console.error('Devtools are not ready');
 			}

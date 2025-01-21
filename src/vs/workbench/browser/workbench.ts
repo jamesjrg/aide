@@ -15,7 +15,7 @@ import { isWindows, isLinux, isWeb, isNative, isMacintosh } from '../../base/com
 import { IWorkbenchContributionsRegistry, Extensions as WorkbenchExtensions } from '../common/contributions.js';
 import { IEditorFactoryRegistry, EditorExtensions } from '../common/editor.js';
 import { getSingletonServiceDescriptors } from '../../platform/instantiation/common/extensions.js';
-import { Position, Parts, IWorkbenchLayoutService, positionToString } from '../services/layout/browser/layoutService.js';
+import { Position, Parts, IWorkbenchLayoutService, positionToString, OverlayedParts } from '../services/layout/browser/layoutService.js';
 import { IStorageService, WillSaveStateReason, StorageScope, StorageTarget } from '../../platform/storage/common/storage.js';
 import { IConfigurationChangeEvent, IConfigurationService } from '../../platform/configuration/common/configuration.js';
 import { IInstantiationService } from '../../platform/instantiation/common/instantiation.js';
@@ -368,7 +368,7 @@ export class Workbench extends Layout {
 
 		// Create overlayed parts
 		for (const { id, role, classes } of [
-			// { id: OverlayedParts.BOTTOMBAR_PART_DEPRECATED, role: 'none', classes: ['bottombar'] },
+			{ id: OverlayedParts.PREVIEW_PART, role: 'none', classes: ['preview'] },
 		]) {
 			const partContainer = this.createPart(id, role, classes);
 			mark(`code/willOverlayedPart/${id}`);
