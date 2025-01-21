@@ -19,6 +19,9 @@ const _allApiProposals = {
 	aideAgent: {
 		proposal: 'https://raw.githubusercontent.com/microsoft/vscode/main/src/vscode-dts/vscode.proposed.aideAgent.d.ts',
 	},
+	aideAgentTerminals: {
+		proposal: 'https://raw.githubusercontent.com/microsoft/vscode/main/src/vscode-dts/vscode.proposed.aideAgentTerminals.d.ts',
+	},
 	aideGetCodeLensProvider: {
 		proposal: 'https://raw.githubusercontent.com/microsoft/vscode/main/src/vscode-dts/vscode.proposed.aideGetCodeLensProvider.d.ts',
 	},

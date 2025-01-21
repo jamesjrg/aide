@@ -155,6 +155,7 @@ export class TerminalInstance extends Disposable implements ITerminalInstance {
 	private _container: HTMLElement | undefined;
 	private _wrapperElement: (HTMLElement & { xterm?: XTermTerminal });
 	get domElement(): HTMLElement { return this._wrapperElement; }
+	private _metadata?: Record<string, string>;
 	private _horizontalScrollbar: DomScrollableElement | undefined;
 	private _terminalFocusContextKey: IContextKey<boolean>;
 	private _terminalHasFixedWidth: IContextKey<boolean>;
@@ -226,6 +227,7 @@ export class TerminalInstance extends Disposable implements ITerminalInstance {
 	}
 
 	get instanceId(): number { return this._instanceId; }
+	get metadata(): Record<string, string> | undefined { return this._metadata; }
 	get resource(): URI { return this._resource; }
 	get cols(): number {
 		if (this._fixedCols !== undefined) {
@@ -489,6 +491,9 @@ export class TerminalInstance extends Disposable implements ITerminalInstance {
 		if (this.shellLaunchConfig.customPtyImplementation) {
 			this._setTitle(this._shellLaunchConfig.name, TitleEventSource.Api);
 		}
+
+
+		this._metadata = this.shellLaunchConfig.metadata;
 
 		this.statusList = this._register(this._scopedInstantiationService.createInstance(TerminalStatusList));
 		this._initDimensions();

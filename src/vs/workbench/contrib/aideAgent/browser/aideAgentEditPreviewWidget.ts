@@ -19,6 +19,7 @@ import './media/aideAgentEditPreviewWidget.css';
 const defaultIconClasses = ThemeIcon.asClassNameArray(Codicon.symbolEvent);
 const cancelledIconClasses = ThemeIcon.asClassNameArray(Codicon.close);
 const errorIconClasses = ThemeIcon.asClassNameArray(Codicon.error);
+const questionIconClasses = ThemeIcon.asClassNameArray(Codicon.question);
 const progressIconClasses = ThemeIcon.asClassNameArray(ThemeIcon.modify(Codicon.sync, 'spin'));
 
 export class AideAgentEditPreviewWidget extends Disposable {
@@ -105,6 +106,9 @@ export class AideAgentEditPreviewWidget extends Disposable {
 			this.isProgressing = false;
 		} else if (message === 'Error') {
 			this._elements.icon.classList.add(...errorIconClasses);
+			this.isProgressing = false;
+		} else if (message === 'Question') {
+			this._elements.icon.classList.add(...questionIconClasses);
 			this.isProgressing = false;
 		} else if (!this.isProgressing) {
 			this._elements.icon.classList.add(...progressIconClasses);

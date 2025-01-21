@@ -23,6 +23,11 @@ import { localize } from '../../../../nls.js';
 import { INotificationService, Severity } from '../../../../platform/notification/common/notification.js';
 import { IOpenerService } from '../../../../platform/opener/common/opener.js';
 import { AgentMode } from '../../../../platform/aideAgent/common/model.js';
+import { IHostService } from '../../../services/host/browser/host.js';
+import { convertBufferToScreenshotVariable } from './contrib/screenshot.js';
+import { IWorkspaceContextService } from '../../../../platform/workspace/common/workspace.js';
+import { IFileQuery, ISearchService, QueryType } from '../../../services/search/common/search.js';
+import { CancellationToken } from '../../../../base/common/cancellation.js';
 
 export class DevtoolsService extends Disposable implements IDevtoolsService {
 	declare _serviceBrand: undefined;
@@ -93,6 +98,9 @@ export class DevtoolsService extends Disposable implements IDevtoolsService {
 		@IConfigurationService private readonly configurationService: IConfigurationService,
 		@INotificationService private readonly notificationService: INotificationService,
 		@IOpenerService private readonly openerService: IOpenerService,
+		@IHostService private readonly hostService: IHostService,
+		@IWorkspaceContextService private readonly workspaceContextService: IWorkspaceContextService,
+		@ISearchService private readonly searchService: ISearchService,
 	) {
 		super();
 
@@ -113,8 +121,48 @@ export class DevtoolsService extends Disposable implements IDevtoolsService {
 		);
 	}
 
-	initialize() {
-		// noop
+	async initialize() {
+		const isReactProject = await this.hasReactDependencyInAnyPackageJson();
+		if (isReactProject) {
+			this.configurationService.updateValue('aide.enableInspectWithDevtools', true);
+		}
+	}
+
+	private async hasReactDependencyInAnyPackageJson(): Promise<boolean> {
+		// Get all workspace folders (there may be multiple)
+		const { folders } = await this.workspaceContextService.getCompleteWorkspace();
+		if (!folders?.length) {
+			return false;
+		}
+
+		for (const folder of folders) {
+			// Search for all package.json files under the folder, excluding settings and ignore files
+			const searchQuery: IFileQuery = {
+				type: QueryType.File,
+				folderQueries: [{ folder: folder.uri, disregardGlobalIgnoreFiles: false, disregardIgnoreFiles: false }],
+				filePattern: 'package.json',
+			};
+
+			const searchResults = await this.searchService.fileSearch(searchQuery, CancellationToken.None);
+			for (const fileMatch of searchResults.results) {
+				try {
+					// Load content of each package.json
+					const fileContent = (await this.fileService.readFile(fileMatch.resource)).value.toString();
+					const parsed = JSON.parse(fileContent);
+
+					// Check if 'react' is in dependencies or devDependencies
+					if (
+						(parsed.dependencies && parsed.dependencies.react) ||
+						(parsed.devDependencies && parsed.devDependencies.react)
+					) {
+						return true;
+					}
+				} catch {
+					// Ignore file parsing errors
+				}
+			}
+		}
+		return false;
 	}
 
 
@@ -189,6 +237,11 @@ export class DevtoolsService extends Disposable implements IDevtoolsService {
 			const isLeading = replaceRange.startColumn === 1;
 			// Add leading space if we are not at the very beginning of the text model
 			const output = isLeading ? displayName : ' ' + displayName;
+
+			const screenshot = await this.hostService.getScreenshot();
+			if (screenshot) {
+				widget.attachmentModel.addContext(convertBufferToScreenshotVariable(screenshot));
+			}
 
 			const success = input.executeEdits('addReactComponentSource', [{ range: replaceRange, text: output }]);
 			if (success) {

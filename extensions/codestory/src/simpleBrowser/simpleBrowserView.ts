@@ -34,7 +34,7 @@ export type UrlChangePayload = {
 export class SimpleBrowserView extends Disposable {
 
 	public static readonly viewType = 'aide.browser.view';
-	private static readonly title = vscode.l10n.t("Web inspector");
+	private static readonly title = vscode.l10n.t("Browser");
 
 	private _onUrlChange = new vscode.EventEmitter<UrlChangePayload>();
 	onUrlChange = this._onUrlChange.event;

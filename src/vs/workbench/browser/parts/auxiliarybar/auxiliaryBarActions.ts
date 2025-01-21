@@ -27,7 +27,7 @@ const auxiliaryBarLeftOffIcon = registerIcon('auxiliarybar-left-off-layout-icon'
 export class ToggleAuxiliaryBarAction extends Action2 {
 
 	static readonly ID = 'workbench.action.toggleAuxiliaryBar';
-	static readonly LABEL = localize2('toggleAuxiliaryBar', "Toggle Secondary Side Bar Visibility");
+	static readonly LABEL = localize2('toggleAuxiliaryBar', "Toggle assistant panel Visibility");
 
 	constructor() {
 		super({
@@ -127,12 +127,12 @@ registerAction2(class FocusAuxiliaryBarAction extends Action2 {
 
 MenuRegistry.appendMenuItems([
 	{
-		id: MenuId.LayoutControlMenu,
+		id: MenuId.RageShakeMenu,
 		item: {
 			group: '2_pane_toggles',
 			command: {
 				id: ToggleAuxiliaryBarAction.ID,
-				title: localize('toggleSecondarySideBar', "Toggle Secondary Side Bar"),
+				title: localize('toggleSecondarySideBar', "Toggle assistant panel"),
 				toggled: { condition: AuxiliaryBarVisibleContext, icon: auxiliaryBarLeftIcon },
 				icon: auxiliaryBarLeftOffIcon,
 			},
@@ -140,12 +140,12 @@ MenuRegistry.appendMenuItems([
 			order: 0
 		}
 	}, {
-		id: MenuId.LayoutControlMenu,
+		id: MenuId.RageShakeMenu,
 		item: {
 			group: '2_pane_toggles',
 			command: {
 				id: ToggleAuxiliaryBarAction.ID,
-				title: localize('toggleSecondarySideBar', "Toggle Secondary Side Bar"),
+				title: localize('toggleSecondarySideBar', "Toggle assistant panel"),
 				toggled: { condition: AuxiliaryBarVisibleContext, icon: auxiliaryBarRightIcon },
 				icon: auxiliaryBarRightOffIcon,
 			},

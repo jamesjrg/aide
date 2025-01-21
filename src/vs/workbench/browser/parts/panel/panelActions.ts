@@ -6,21 +6,28 @@
 import './media/panelpart.css';
 import { localize, localize2 } from '../../../../nls.js';
 import { KeyMod, KeyCode } from '../../../../base/common/keyCodes.js';
+import { Disposable } from '../../../../base/common/lifecycle.js';
 import { MenuId, MenuRegistry, registerAction2, Action2, IAction2Options } from '../../../../platform/actions/common/actions.js';
 import { Categories } from '../../../../platform/action/common/actionCommonCategories.js';
+import { Registry } from '../../../../platform/registry/common/platform.js';
 import { isHorizontal, IWorkbenchLayoutService, PanelAlignment, Parts, Position, positionToString } from '../../../services/layout/browser/layoutService.js';
+import { IStatusbarEntry, IStatusbarEntryAccessor, IStatusbarService, StatusbarAlignment } from '../../../services/statusbar/browser/statusbar.js';
 import { PanelAlignmentContext, PanelMaximizedContext, PanelPositionContext, PanelVisibleContext } from '../../../common/contextkeys.js';
-import { ContextKeyExpr, ContextKeyExpression } from '../../../../platform/contextkey/common/contextkey.js';
+import { ContextKeyExpr, ContextKeyExpression, IContextKeyService } from '../../../../platform/contextkey/common/contextkey.js';
 import { Codicon } from '../../../../base/common/codicons.js';
 import { registerIcon } from '../../../../platform/theme/common/iconRegistry.js';
 import { ServicesAccessor } from '../../../../editor/browser/editorExtensions.js';
+import { Extensions as WorkbenchExtensions, IWorkbenchContribution, IWorkbenchContributionsRegistry } from '../../../common/contributions.js';
 import { ViewContainerLocation, IViewDescriptorService } from '../../../common/views.js';
+import { LifecyclePhase } from '../../../services/lifecycle/common/lifecycle.js';
 import { IViewsService } from '../../../services/views/common/viewsService.js';
 import { IPaneCompositePartService } from '../../../services/panecomposite/browser/panecomposite.js';
 import { INotificationService } from '../../../../platform/notification/common/notification.js';
 import { ICommandActionTitle } from '../../../../platform/action/common/action.js';
 import { KeybindingWeight } from '../../../../platform/keybinding/common/keybindingsRegistry.js';
 import { SwitchCompositeViewAction } from '../compositeBarActions.js';
+
+const workbenchRegistry = Registry.as<IWorkbenchContributionsRegistry>(WorkbenchExtensions.Workbench);
 
 const maximizeIcon = registerIcon('panel-maximize', Codicon.chevronUp, localize('maximizeIcon', 'Icon to maximize a panel.'));
 const restoreIcon = registerIcon('panel-restore', Codicon.chevronDown, localize('restoreIcon', 'Icon to restore a panel.'));
@@ -312,6 +319,7 @@ registerAction2(class extends Action2 {
 	}
 });
 
+/*
 MenuRegistry.appendMenuItems([
 	{
 		id: MenuId.LayoutControlMenu,
@@ -328,6 +336,46 @@ MenuRegistry.appendMenuItems([
 		}
 	}
 ]);
+*/
+class LayoutStatusbarContributions extends Disposable implements IWorkbenchContribution {
+	private readonly layoutKeys = new Set([PanelVisibleContext.key]);
+	private togglePanelAccessor: IStatusbarEntryAccessor | undefined = undefined;
+
+	constructor(
+		@IContextKeyService private readonly contextKeyservice: IContextKeyService,
+		@IStatusbarService private readonly statusbarService: IStatusbarService,
+	) {
+		super();
+
+		this._register(this.contextKeyservice.onDidChangeContext(e => {
+			if (e.affectsSome(this.layoutKeys)) {
+				this.updatePanelToggle();
+			}
+		}));
+
+		this.updatePanelToggle();
+	}
+
+	private updatePanelToggle() {
+		const label = localize('togglePanel', "Toggle Panel");
+		const entry: IStatusbarEntry = {
+			name: label,
+			ariaLabel: label,
+			command: TogglePanelAction.ID,
+			text: PanelVisibleContext.getValue(this.contextKeyservice) ? `$(${panelIcon.id})` : `$(${panelOffIcon.id})`
+		};
+
+		if (!this.togglePanelAccessor) {
+			this.togglePanelAccessor = this.statusbarService.addEntry(
+				entry, TogglePanelAction.ID, StatusbarAlignment.RIGHT, -Number.MAX_VALUE - 1,
+			);
+			this._register(this.togglePanelAccessor);
+		} else {
+			this.togglePanelAccessor.update(entry);
+		}
+	}
+}
+workbenchRegistry.registerWorkbenchContribution(LayoutStatusbarContributions, LifecyclePhase.Restored);
 
 class MoveViewsBetweenPanelsAction extends Action2 {
 	constructor(private readonly source: ViewContainerLocation, private readonly destination: ViewContainerLocation, desc: Readonly<IAction2Options>) {

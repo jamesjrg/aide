@@ -8,13 +8,11 @@ import { Codicon } from '../../../../base/common/codicons.js';
 import { createStringDataTransferItem, IDataTransferItem, IReadonlyVSDataTransfer, VSDataTransfer } from '../../../../base/common/dataTransfer.js';
 import { HierarchicalKind } from '../../../../base/common/hierarchicalKind.js';
 import { Disposable } from '../../../../base/common/lifecycle.js';
-import { Mimes } from '../../../../base/common/mime.js';
-import { URI, UriComponents } from '../../../../base/common/uri.js';
+import { UriComponents } from '../../../../base/common/uri.js';
 import { IRange } from '../../../../editor/common/core/range.js';
 import { DocumentPasteContext, DocumentPasteEdit, DocumentPasteEditProvider, DocumentPasteEditsSession } from '../../../../editor/common/languages.js';
 import { ITextModel } from '../../../../editor/common/model.js';
 import { ILanguageFeaturesService } from '../../../../editor/common/services/languageFeatures.js';
-import { IModelService } from '../../../../editor/common/services/model.js';
 import { localize } from '../../../../nls.js';
 import { IChatRequestVariableEntry } from '../common/aideAgentModel.js';
 import { IAideAgentWidgetService } from './aideAgent.js';
@@ -159,83 +157,6 @@ export class CopyTextProvider implements DocumentPasteEditProvider {
 	}
 }
 
-export class PasteTextProvider implements DocumentPasteEditProvider {
-
-	public readonly kind = new HierarchicalKind('aideAgent.attach.text');
-	public readonly providedPasteEditKinds = [this.kind];
-
-	public readonly copyMimeTypes = [];
-	public readonly pasteMimeTypes = [COPY_MIME_TYPES];
-
-	constructor(
-		private readonly chatWidgetService: IAideAgentWidgetService,
-		private readonly modelService: IModelService
-	) { }
-
-	async provideDocumentPasteEdits(model: ITextModel, ranges: readonly IRange[], dataTransfer: IReadonlyVSDataTransfer, context: DocumentPasteContext, token: CancellationToken): Promise<DocumentPasteEditsSession | undefined> {
-		if (model.uri.scheme !== ChatInputPart.INPUT_SCHEME) {
-			return;
-		}
-		const text = dataTransfer.get(Mimes.text);
-		const editorData = dataTransfer.get('vscode-editor-data');
-		const additionalEditorData = dataTransfer.get(COPY_MIME_TYPES);
-
-		if (!editorData || !text || !additionalEditorData) {
-			return;
-		}
-
-		const textdata = await text.asString();
-		const metadata = JSON.parse(await editorData.asString());
-		const additionalData: SerializedCopyData = JSON.parse(await additionalEditorData.asString());
-
-		const widget = this.chatWidgetService.getWidgetByInputUri(model.uri);
-		if (!widget) {
-			return;
-		}
-
-		const start = additionalData.range.startLineNumber;
-		const end = additionalData.range.endLineNumber;
-		if (start === end) {
-			const textModel = this.modelService.getModel(URI.revive(additionalData.uri));
-			if (!textModel) {
-				return;
-			}
-
-			// If copied line text data is the entire line content, then we can paste it as a code attachment. Otherwise, we ignore and use default paste provider.
-			const lineContent = textModel.getLineContent(start);
-			if (lineContent !== textdata) {
-				return;
-			}
-		}
-
-		const copiedContext = getCopiedContext(textdata, URI.revive(additionalData.uri), metadata.mode, additionalData.range);
-
-		if (token.isCancellationRequested || !copiedContext) {
-			return;
-		}
-
-		const currentContextIds = widget.attachmentModel.getAttachmentIDs();
-		if (currentContextIds.has(copiedContext.id)) {
-			return;
-		}
-
-		const edit = createCustomPasteEdit(model, copiedContext, Mimes.text, this.kind, localize('pastedCodeAttachment', 'Pasted Code Attachment'), this.chatWidgetService);
-		edit.yieldTo = [{ kind: HierarchicalKind.Empty.append('text', 'plain') }];
-		return createEditSession(edit);
-	}
-}
-
-function getCopiedContext(code: string, file: URI, language: string, range: IRange): IChatRequestVariableEntry {
-	return {
-		id: 'vscode.code',
-		icon: Codicon.code,
-		isDynamic: true,
-		name: file.path,
-		value: code,
-		references: [{ reference: file, kind: 'reference' }],
-	};
-}
-
 function createCustomPasteEdit(model: ITextModel, context: IChatRequestVariableEntry, handledMimeType: string, kind: HierarchicalKind, title: string, chatWidgetService: IAideAgentWidgetService): DocumentPasteEdit {
 	const customEdit = {
 		resource: model.uri,
@@ -279,11 +200,9 @@ export class ChatPasteProvidersFeature extends Disposable {
 	constructor(
 		@ILanguageFeaturesService languageFeaturesService: ILanguageFeaturesService,
 		@IAideAgentWidgetService chatWidgetService: IAideAgentWidgetService,
-		@IModelService modelService: IModelService
 	) {
 		super();
 		this._register(languageFeaturesService.documentPasteEditProvider.register({ scheme: ChatInputPart.INPUT_SCHEME, pattern: '*', hasAccessToAllModels: true }, new PasteImageProvider(chatWidgetService)));
-		this._register(languageFeaturesService.documentPasteEditProvider.register({ scheme: ChatInputPart.INPUT_SCHEME, pattern: '*', hasAccessToAllModels: true }, new PasteTextProvider(chatWidgetService, modelService)));
 		this._register(languageFeaturesService.documentPasteEditProvider.register('*', new CopyTextProvider()));
 	}
 }

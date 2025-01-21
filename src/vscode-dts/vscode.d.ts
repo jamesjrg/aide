@@ -7303,6 +7303,11 @@ declare module 'vscode' {
 		readonly name: string;
 
 		/**
+		 * Optional metadata to attach to this terminal
+		 */
+		metadata?: Record<string, string>;
+
+		/**
 		 * The process ID of the shell process.
 		 */
 		readonly processId: Thenable<number | undefined>;
@@ -12069,6 +12074,11 @@ declare module 'vscode' {
 		 * A path to a custom shell executable to be used in the terminal.
 		 */
 		shellPath?: string;
+
+		/**
+		 * Optional metadata about this terminal
+		 */
+		metadata?: Record<string, string>;
 
 		/**
 		 * Args for the custom shell executable. A string can be used on Windows only which allows

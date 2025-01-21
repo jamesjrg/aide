@@ -597,6 +597,8 @@ export interface ITerminalInstance extends IBaseTerminalInstance {
 	 */
 	readonly resource: URI;
 
+	readonly metadata?: Record<string, string>;
+
 	readonly cols: number;
 	readonly rows: number;
 	readonly maxCols: number;

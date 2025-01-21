@@ -176,12 +176,6 @@ export class ChatVariablesService implements IAideAgentVariablesService {
 			});
 		}
 
-		if (options?.attachedContext) {
-			for (const context of options.attachedContext) {
-				resolvedAttachedContext.push(context);
-			}
-		}
-
 		// Make array not sparse
 		resolvedVariables = coalesce<IChatRequestVariableEntry>(resolvedVariables);
 

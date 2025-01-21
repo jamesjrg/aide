@@ -474,6 +474,11 @@ export interface IShellLaunchConfig {
 	name?: string;
 
 	/**
+	 * The name of the terminal, if this is not set the name of the process will be used.
+	 */
+	metadata?: Record<string, string>;
+
+	/**
 	 * A string to follow the name of the terminal with, indicating the type of terminal
 	 */
 	type?: 'Task' | 'Local';

@@ -253,7 +253,7 @@ export class BrowserTitlebarPart extends Part implements ITitlebarPart {
 	private title!: HTMLElement;
 
 	private leftContent!: HTMLElement;
-	// private centerContent!: HTMLElement;
+	private centerContent!: HTMLElement;
 	private rightContent!: HTMLElement;
 
 	protected customMenubar: CustomMenubarControl | undefined;
@@ -450,7 +450,7 @@ export class BrowserTitlebarPart extends Part implements ITitlebarPart {
 		this.rootContainer = append(parent, $('.titlebar-container'));
 
 		this.leftContent = append(this.rootContainer, $('.titlebar-left'));
-		// this.centerContent = append(this.rootContainer, $('.titlebar-center'));
+		this.centerContent = append(this.rootContainer, $('.titlebar-center'));
 		this.rightContent = append(this.rootContainer, $('.titlebar-right'));
 
 		// App Icon (Windows, Linux)
@@ -471,10 +471,6 @@ export class BrowserTitlebarPart extends Part implements ITitlebarPart {
 			this.createActionToolBarMenus();
 		}
 
-		// Title
-		this.title = append(this.leftContent, $('div.window-title'));
-		this.createTitle();
-
 		// Draggable region that we can manipulate for #52522
 		this.dragRegion = prepend(this.rootContainer, $('div.titlebar-drag-region'));
 
@@ -488,6 +484,11 @@ export class BrowserTitlebarPart extends Part implements ITitlebarPart {
 			this.installMenubar();
 		}
 
+		// Title
+		this.title = append(this.centerContent, $('div.window-title'));
+		this.createTitle();
+
+		// Window Controls Container
 		if (!hasNativeTitlebar(this.configurationService, this.titleBarStyle)) {
 			let primaryWindowControlsLocation = isMacintosh ? 'left' : 'right';
 			if (isMacintosh && isNative) {
@@ -649,7 +650,7 @@ export class BrowserTitlebarPart extends Part implements ITitlebarPart {
 			overflowBehavior: { maxItems: 9, exempted: [ACCOUNTS_ACTIVITY_ID, GLOBAL_ACTIVITY_ID] },
 			anchorAlignmentProvider: () => AnchorAlignment.RIGHT,
 			telemetrySource: 'titlePart',
-			highlightToggledItems: this.editorActionsEnabled, // Only show toggled state for editor actions
+			highlightToggledItems: this.editorActionsEnabled, // Only show toggled state for editor actions (Layout actions are not shown as toggled)
 			actionViewItemProvider: (action, options) => this.actionViewItemProvider(action, options),
 			hoverDelegate: this.hoverDelegate
 		}));

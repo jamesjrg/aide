@@ -28,9 +28,9 @@ export function registerCodeEditActions() {
 				f1: false,
 				category: CHAT_CATEGORY,
 				icon: Codicon.saveAll,
-				precondition: ContextKeyExpr.and(CONTEXT_CHAT_LAST_EXCHANGE_COMPLETE, CONTEXT_CHAT_SESSION_WITH_EDITS),
+				precondition: CONTEXT_CHAT_INPUT_HAS_FOCUS,
 				keybinding: {
-					when: ContextKeyExpr.and(CONTEXT_CHAT_LAST_EXCHANGE_COMPLETE, CONTEXT_CHAT_SESSION_WITH_EDITS, CONTEXT_CHAT_INPUT_HAS_FOCUS),
+					when: CONTEXT_CHAT_INPUT_HAS_FOCUS,
 					primary: KeyMod.CtrlCmd | KeyCode.KeyS,
 					weight: KeybindingWeight.WorkbenchContrib
 				},
