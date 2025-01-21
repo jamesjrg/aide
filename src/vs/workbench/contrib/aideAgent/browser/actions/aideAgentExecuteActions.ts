@@ -146,7 +146,7 @@ class ToggleInspectingHost extends Action2 {
 	}
 }
 
-function registerToggleInspectinHost() {
+function registerToggleInspectingHost() {
 	MenuRegistry.appendMenuItem(MenuId.AideAgentInput, {
 		group: 'navigation',
 		order: 2,
@@ -306,5 +306,5 @@ export function registerChatExecuteActions() {
 	registerAction2(ToggleInspectingHost);
 	registerAction2(AideQuickFixAction);
 	registerPlanningToggleMenu();
-	registerToggleInspectinHost();
+	registerToggleInspectingHost();
 }

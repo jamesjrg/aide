@@ -592,6 +592,7 @@ export interface IChatModel {
 	readonly requestInProgress: boolean;
 	readonly inputPlaceholder?: string;
 	readonly plan?: IAideAgentPlanModel;
+	isDevtoolsContext: boolean;
 	getExchanges(): IChatExchangeModel[];
 	toExport(): IExportableChatData;
 	toJSON(): ISerializableChatData;
@@ -880,6 +881,15 @@ export class ChatModel extends Disposable implements IChatModel {
 	set plan(plan: AideAgentPlanModel | undefined) {
 		this._plan = plan;
 		this.isPlanVisible.set(!!plan);
+	}
+
+	private _isDevtoolsContext: boolean = false;
+	get isDevtoolsContext(): boolean {
+		return this._isDevtoolsContext;
+	}
+
+	set isDevtoolsContext(isDevtoolsContext: boolean) {
+		this._isDevtoolsContext = isDevtoolsContext;
 	}
 
 	constructor(
