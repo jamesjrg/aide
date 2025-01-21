@@ -37,6 +37,7 @@ const dirs = [
 	'extensions/microsoft-authentication',
 	'extensions/notebook-renderers',
 	'extensions/npm',
+	'extensions/open-remote-ssh',
 	'extensions/open-remote-wsl',
 	'extensions/php-language-features',
 	'extensions/references-view',
