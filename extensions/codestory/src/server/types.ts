@@ -783,7 +783,7 @@ export type SidecarGoToDefinitionRequest = {
 
 export type SidecarListFilesEndpoint = {
 	directory_path: string;
-	is_recursive: boolean;
+	recursive: boolean;
 };
 
 export type SidecarListFilesOutput = {
