@@ -3,7 +3,7 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 import * as http from 'http';
-import { SidecarApplyEditsRequest, LSPDiagnostics, SidecarGoToDefinitionRequest, SidecarGoToImplementationRequest, SidecarGoToReferencesRequest, SidecarOpenFileToolRequest, LSPQuickFixInvocationRequest, SidecarQuickFixRequest, SidecarSymbolSearchRequest, SidecarInlayHintsRequest, SidecarGetOutlineNodesRequest, SidecarOutlineNodesWithContentRequest, EditedCodeStreamingRequest, SidecarRecentEditsRetrieverRequest, SidecarRecentEditsRetrieverResponse, SidecarCreateFileRequest, LSPFileDiagnostics, SidecarGetPreviousWordRangeRequest, SidecarDiagnosticsResponse, SidecarCreateNewExchangeRequest, SidecarUndoPlanStep, SidecarExecuteTerminalCommandRequest } from './types';
+import { SidecarApplyEditsRequest, LSPDiagnostics, SidecarGoToDefinitionRequest, SidecarGoToImplementationRequest, SidecarGoToReferencesRequest, SidecarOpenFileToolRequest, LSPQuickFixInvocationRequest, SidecarQuickFixRequest, SidecarSymbolSearchRequest, SidecarInlayHintsRequest, SidecarGetOutlineNodesRequest, SidecarOutlineNodesWithContentRequest, EditedCodeStreamingRequest, SidecarRecentEditsRetrieverRequest, SidecarRecentEditsRetrieverResponse, SidecarCreateFileRequest, LSPFileDiagnostics, SidecarGetPreviousWordRangeRequest, SidecarDiagnosticsResponse, SidecarCreateNewExchangeRequest, SidecarUndoPlanStep, SidecarExecuteTerminalCommandRequest, SidecarListFilesEndpoint } from './types';
 import { Position, Range, workspace } from 'vscode';
 import { getDiagnosticsFromEditor, getEnrichedDiagnostics, getFileDiagnosticsFromEditor, getFullWorkspaceDiagnostics, getHoverInformation } from './diagnostics';
 import { openFileEditor } from './openFile';
@@ -20,6 +20,7 @@ import { getPreviousWordAtPosition } from './previousWordCommand';
 import { goToTypeDefinition } from './goToTypeDefinition';
 import { getRipGrepPath } from '../utilities/ripGrep';
 import { executeTerminalCommand } from '../terminal/TerminalManager';
+import { listFilesEndpoint } from './listFiles';
 
 // Helper function to read the request body
 function readRequestBody(req: http.IncomingMessage): Promise<string> {
@@ -222,6 +223,12 @@ export function handleRequest(
 				res.end(JSON.stringify({
 					'rip_grep_path': ripGrepPath,
 				}));
+			} else if (req.method === 'POST' && req.url === '/list_files') {
+				const body = await readRequestBody(req);
+				const request: SidecarListFilesEndpoint = JSON.parse(body);
+				const response = await listFilesEndpoint(request);
+				res.writeHead(200, { 'Content-Type': 'application/json' });
+				res.end(JSON.stringify(response));
 			} else if (req.method === 'POST' && req.url === '/execute_terminal_command') {
 				const body = await readRequestBody(req);
 				const request: SidecarExecuteTerminalCommandRequest = JSON.parse(body);
