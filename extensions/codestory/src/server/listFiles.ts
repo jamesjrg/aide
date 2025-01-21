@@ -178,7 +178,7 @@ export async function listFilesEndpoint(
 ): Promise<SidecarListFilesOutput> {
 	const results = await listFiles(
 		vscode.Uri.file(input.directory_path),
-		input.is_recursive,
+		input.recursive,
 		250,
 	);
 	return {
