@@ -39,6 +39,7 @@ export abstract class OverlayedPart extends Component implements IOverlayedView 
 	readonly onDidSizeChange = this._onDidSizeChange.event;
 
 	private parent: HTMLElement | undefined;
+	private contentArea: HTMLElement | undefined;
 	element!: HTMLElement;
 
 	private _width: number = 0;
@@ -56,7 +57,8 @@ export abstract class OverlayedPart extends Component implements IOverlayedView 
 		this._register(layoutService.registerOverlayedPart(this));
 	}
 
-	create(parent: HTMLElement): void {
+	create(parent: HTMLElement, options?: object): void {
+		this.contentArea = this.createContentArea(parent, options);
 		this.element = parent;
 		this.parent = parent;
 		this.element.style.position = 'absolute';
@@ -66,11 +68,19 @@ export abstract class OverlayedPart extends Component implements IOverlayedView 
 		this.updateStyles();
 	}
 
+	protected getContentArea(): HTMLElement | undefined {
+		return this.contentArea;
+	}
+
 	protected override onThemeChange(theme: IColorTheme): void {
 		// only call if our create() method has been called
 		if (this.parent) {
 			super.onThemeChange(theme);
 		}
+	}
+
+	protected createContentArea(parent: HTMLElement, options?: object): HTMLElement | undefined {
+		return undefined;
 	}
 
 	layout(newWidth: number, newHeight: number): void {

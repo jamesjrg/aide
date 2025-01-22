@@ -4,7 +4,7 @@
  *--------------------------------------------------------------------------------------------*/
 
 import { localize } from '../../../../nls.js';
-import { EditorGroupLayout, GroupDirection, GroupLocation, GroupOrientation, GroupsArrangement, GroupsOrder, IAuxiliaryEditorPart, IEditorGroupContextKeyProvider, IEditorDropTargetDelegate, IEditorGroupsService, IEditorSideGroup, IEditorWorkingSet, IFindGroupScope, IMergeGroupOptions, IEditorWorkingSetOptions, IEditorPart } from '../../../services/editor/common/editorGroupsService.js';
+import { EditorGroupLayout, GroupDirection, GroupLocation, GroupOrientation, GroupsArrangement, GroupsOrder, IAuxiliaryEditorPart, IEditorGroupContextKeyProvider, IEditorDropTargetDelegate, IEditorGroupsService, IEditorSideGroup, IEditorWorkingSet, IFindGroupScope, IMergeGroupOptions, IEditorWorkingSetOptions, IEditorPart, IPreviewEditorPart } from '../../../services/editor/common/editorGroupsService.js';
 import { Emitter } from '../../../../base/common/event.js';
 import { DisposableMap, DisposableStore, IDisposable, toDisposable } from '../../../../base/common/lifecycle.js';
 import { GroupIdentifier } from '../../../common/editor.js';
@@ -24,6 +24,8 @@ import { ContextKeyValue, IContextKey, IContextKeyService, RawContextKey } from 
 import { isHTMLElement } from '../../../../base/browser/dom.js';
 import { ServiceCollection } from '../../../../platform/instantiation/common/serviceCollection.js';
 import { IEditorService } from '../../../services/editor/common/editorService.js';
+import { IPreviewEditorPartOpenOptions } from '../preview/previewPart.js';
+import { IPreviewPartService } from '../../../services/previewPart/browser/previewPartService.js';
 
 interface IEditorPartsUIState {
 	readonly auxiliary: IAuxiliaryEditorPartState[];
@@ -53,7 +55,8 @@ export class EditorParts extends MultiWindowParts<EditorPart> implements IEditor
 		@IStorageService private readonly storageService: IStorageService,
 		@IThemeService themeService: IThemeService,
 		@IAuxiliaryWindowService private readonly auxiliaryWindowService: IAuxiliaryWindowService,
-		@IContextKeyService private readonly contextKeyService: IContextKeyService
+		@IContextKeyService private readonly contextKeyService: IContextKeyService,
+		@IPreviewPartService private readonly previewPartService: IPreviewPartService
 	) {
 		super('workbench.editorParts', themeService, storageService);
 
@@ -111,6 +114,22 @@ export class EditorParts extends MultiWindowParts<EditorPart> implements IEditor
 
 		this._onDidCreateAuxiliaryEditorPart.fire(part);
 
+		return part;
+	}
+
+	//#endregion
+
+	//#region Preview Editor Parts
+
+	getOrCreatePreviewEditorPart(options?: IPreviewEditorPartOpenOptions): IPreviewEditorPart {
+		const { part, instantiationService, disposables } = this.previewPartService.getOrCreateEditorGroupPart(this, undefined);
+
+		// Keep instantiation service
+		this.mapPartToInstantiationService.set(part.windowId, instantiationService);
+		disposables.add(toDisposable(() => this.mapPartToInstantiationService.delete(part.windowId)));
+
+		// Events
+		this._onDidAddGroup.fire(part.activeGroup);
 		return part;
 	}
 

@@ -3,115 +3,47 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { IDisposable } from '../../../../base/common/lifecycle.js';
+import { DisposableStore, IDisposable } from '../../../../base/common/lifecycle.js';
 import { IInstantiationService } from '../../../../platform/instantiation/common/instantiation.js';
 import { IStorageService } from '../../../../platform/storage/common/storage.js';
 import { IThemeService } from '../../../../platform/theme/common/themeService.js';
-import { IPreviewPartService } from '../../../services/previewPart/browser/previewPartService.js';
 import { IWorkbenchLayoutService, OverlayedParts } from '../../../services/layout/browser/layoutService.js';
-import { MultiWindowParts } from '../../part.js';
 import { OverlayedPart } from '../../overlayedPart.js';
-import { IEditorOptions, EditorActivation } from '../../../../platform/editor/common/editor.js';
-import { IUntypedEditorInput, IEditorPane, isEditorInput, isEditorInputWithOptionsAndGroup } from '../../../common/editor.js';
-import { EditorInput } from '../../../common/editor/editorInput.js';
-import { findGroup } from '../../../services/editor/common/editorGroupFinder.js';
-import { IEditorGroup } from '../../../services/editor/common/editorGroupsService.js';
-import { IEditorResolverService, ResolvedStatus } from '../../../services/editor/common/editorResolverService.js';
-import { PreferredGroup, isPreferredGroup } from '../../../services/editor/common/editorService.js';
-import { ITextEditorService } from '../../../services/textfile/common/textEditorService.js';
-
-export class PreviewPartService extends MultiWindowParts<PreviewPart> implements IPreviewPartService {
-	declare _serviceBrand: undefined;
-
-	readonly mainPart = this._register(this.instantiationService.createInstance(PreviewPart));
-
-	constructor(
-		@IInstantiationService protected readonly instantiationService: IInstantiationService,
-		@IEditorResolverService private readonly editorResolverService: IEditorResolverService,
-		@ITextEditorService private readonly textEditorService: ITextEditorService,
-		@IStorageService storageService: IStorageService,
-		@IThemeService themeService: IThemeService,
-	) {
-		super('workbench.previewPartService', themeService, storageService);
-
-		this._register(this.registerPart(this.mainPart));
-	}
+import { GroupDirection } from '../../../services/editor/common/editorGroupsService.js';
+import { IConfigurationService } from '../../../../platform/configuration/common/configuration.js';
+import { IContextKeyService } from '../../../../platform/contextkey/common/contextkey.js';
+import { IHostService } from '../../../services/host/browser/host.js';
+import { IEditorGroupView, IEditorPartsView } from '../editor/editor.js';
+import { EditorPart, IEditorPartUIState } from '../editor/editorPart.js';
 
 
-	async openPreview(editor: EditorInput | IUntypedEditorInput, optionsOrPreferredGroup?: IEditorOptions | PreferredGroup, preferredGroup?: PreferredGroup): Promise<IEditorPane | undefined> {
-		let typedEditor: EditorInput | undefined = undefined;
-		let options = isEditorInput(editor) ? optionsOrPreferredGroup as IEditorOptions : editor.options;
-		let group: IEditorGroup | undefined = undefined;
-
-		if (isPreferredGroup(optionsOrPreferredGroup)) {
-			preferredGroup = optionsOrPreferredGroup;
-		}
-
-		// Resolve override unless disabled
-		if (!isEditorInput(editor)) {
-			const resolvedEditor = await this.editorResolverService.resolveEditor(editor, preferredGroup);
-
-			if (resolvedEditor === ResolvedStatus.ABORT) {
-				return; // skip editor if override is aborted
-			}
-
-			// We resolved an editor to use
-			if (isEditorInputWithOptionsAndGroup(resolvedEditor)) {
-				typedEditor = resolvedEditor.editor;
-				options = resolvedEditor.options;
-				group = resolvedEditor.group;
-			}
-		}
-
-		// @g-danna I will need to reuse this logic for my overlay preview service
-
-		// Override is disabled or did not apply: fallback to default
-		if (!typedEditor) {
-			typedEditor = isEditorInput(editor) ? editor : await this.textEditorService.resolveTextEditor(editor);
-		}
-
-		// If group still isn't defined because of a disabled override we resolve it
-		if (!group) {
-			let activation: EditorActivation | undefined = undefined;
-			const findGroupResult = this.instantiationService.invokeFunction(findGroup, { editor: typedEditor, options }, preferredGroup);
-			if (findGroupResult instanceof Promise) {
-				([group, activation] = await findGroupResult);
-			} else {
-				([group, activation] = findGroupResult);
-			}
-
-			// Mixin editor group activation if returned
-			if (activation) {
-				options = { ...options, activation };
-			}
-		}
-
-		return group.openEditor(typedEditor, options);
-	}
-
-	/*
-	createAuxiliaryPreviewPart(container: HTMLElement, editorContainer: HTMLElement): PreviewPart {
-		const previewPartContainer = document.createElement('div');
-		const previewPart = this.instantiationService.createInstance(PreviewPart);
-		this._register(previewPart);
-		previewPartContainer.classList.add('part', 'bottombar-part');
-		container.insertBefore(previewPartContainer, editorContainer.nextSibling);
-		return previewPart;
-	}
-	*/
+export interface IPreviewEditorPartOpenOptions {
+	readonly state?: IEditorPartUIState;
 }
-export class PreviewPart extends OverlayedPart implements IDisposable {
-	static readonly activePanelSettingsKey = 'workbench.bottombar.activepanelid';
+
+export interface ICreatePreviewEditorPartResult {
+	readonly part: PreviewEditorPartImpl;
+	readonly instantiationService: IInstantiationService;
+	readonly disposables: DisposableStore;
+}
+
+
+export class PreviewEditorPart extends OverlayedPart implements IDisposable {
+	static readonly activePanelSettingsKey = 'workbench.preview.activepanelid';
 
 	private _content!: HTMLElement;
 	get content(): HTMLElement {
 		return this._content;
 	}
 
+	private editorPartContainer!: HTMLDivElement;
+	private editorCreationResults: ICreatePreviewEditorPartResult | undefined;
+
 	constructor(
 		@IStorageService storageService: IStorageService,
 		@IWorkbenchLayoutService layoutService: IWorkbenchLayoutService,
 		@IThemeService themeService: IThemeService,
+		@IInstantiationService private readonly instantiationService: IInstantiationService
 	) {
 		super(
 			OverlayedParts.PREVIEW_PART,
@@ -120,11 +52,48 @@ export class PreviewPart extends OverlayedPart implements IDisposable {
 			layoutService
 		);
 
+		// Register this part as an overlay section of the workbench:
 		layoutService.registerOverlayedPart(this);
+	}
+
+	override createContentArea(parent: HTMLElement): HTMLElement {
+		// Main container for your preview part
+		const container = document.createElement('div');
+		container.classList.add('preview-part-content');
+		parent.appendChild(container);
+
+		// A nested div for the editor part specifically
+		this.editorPartContainer = document.createElement('div');
+		this.editorPartContainer.classList.add('part', 'editor');
+		container.appendChild(this.editorPartContainer);
+		return container;
+	}
+
+	getOrCreateEditorPart(editorPartsView: IEditorPartsView, state?: IEditorPartUIState): ICreatePreviewEditorPartResult {
+		if (!this.editorCreationResults) {
+			const disposables = new DisposableStore();
+			const editorPart = disposables.add(this.instantiationService.createInstance(PreviewEditorPartImpl, editorPartsView, state));
+			editorPart.create(this.editorPartContainer);
+
+			const editorCreationResults = {
+				part: editorPart,
+				instantiationService: this.instantiationService,
+				disposables: disposables
+			};
+			this.editorCreationResults = editorCreationResults;
+			return editorCreationResults;
+		} else {
+			return this.editorCreationResults;
+		}
 	}
 
 	override layout(width: number, height: number): void {
 		super.layout(width, height);
+		// Forward layout calls to your editor part
+		const editorPart = this.editorCreationResults?.part;
+		if (editorPart) {
+			editorPart.layout(width, height, 0, 0);
+		}
 	}
 
 	toJSON(): object {
@@ -132,4 +101,102 @@ export class PreviewPart extends OverlayedPart implements IDisposable {
 			type: OverlayedParts.PREVIEW_PART,
 		};
 	}
+
+	// If you want to easily retrieve the "activeGroup" or create a new one here:
+	get activeGroup() {
+		const editorPart = this.assertEditorPartIsDefined();
+		return editorPart.activeGroup;
+	}
+
+	addGroup() {
+		const editorPart = this.assertEditorPartIsDefined();
+		return editorPart.addGroup(
+			this.activeGroup,
+			GroupDirection.LEFT
+		);
+	}
+
+	private assertEditorPartIsDefined(): PreviewEditorPartImpl {
+		if (!this.editorCreationResults?.part) {
+			throw new Error(`Preview editor has not been created`);
+		}
+		return this.editorCreationResults.part;
+	}
+
+	override dispose(): void {
+		super.dispose();
+		const editorPart = this.assertEditorPartIsDefined();
+		editorPart.dispose();
+	}
 }
+
+class PreviewEditorPartImpl extends EditorPart {
+	constructor(
+		editorPartsView: IEditorPartsView,
+		private readonly state: IEditorPartUIState | undefined,
+		@IInstantiationService instantiationService: IInstantiationService,
+		@IThemeService themeService: IThemeService,
+		@IConfigurationService configurationService: IConfigurationService,
+		@IStorageService storageService: IStorageService,
+		@IWorkbenchLayoutService layoutService: IWorkbenchLayoutService,
+		@IHostService hostService: IHostService,
+		@IContextKeyService contextKeyService: IContextKeyService
+	) {
+		super(
+			editorPartsView,
+			'workbench.parts.previewEditor',
+			'Preview Editor Part',
+			999999, // TODO @g-danna pass real window ID
+			instantiationService,
+			themeService,
+			configurationService,
+			storageService,
+			layoutService,
+			hostService,
+			contextKeyService
+		);
+	}
+
+	// If you want custom logic when removing the last group,
+	// you can override removeGroup(...) similarly to AuxiliaryEditorPartImpl:
+	override removeGroup(group: number | IEditorGroupView, preserveFocus?: boolean): void {
+		if (this.count === 1 && this.activeGroup === this.assertGroupView(group)) {
+			// If removing the last group, do something special (close the part?)
+			// e.g. this.closePreview();
+		} else {
+			super.removeGroup(group, preserveFocus);
+		}
+	}
+
+	// Optionally override loadState/saveState if you do *not* want to persist
+	// group layouts as the main editor does.
+	protected override loadState() {
+		return this.state;
+	}
+	protected override saveState(): void {
+		return; // disabled, preview editor part state is tracked outside
+	}
+}
+
+/*
+export async function findPreviewGroup(
+	accessor: ServicesAccessor,
+	editor: EditorInputWithOptions | IUntypedEditorInput,
+	preferredGroup?: PreferredGroup
+): Promise<[IEditorGroup, EditorActivation | undefined]> {
+	// #1: Get your preview part service and from that, the part that holds your custom EditorPart
+	const previewPartService = accessor.get(IPreviewPartService);
+	const previewPart = previewPartService.mainPart; // or whichever instance you want
+
+	// #2: Create or fetch the target group in your preview EditorPart
+	let targetGroup = previewPart.activeGroup;
+	if (!targetGroup) {
+		targetGroup = previewPart.addGroup(); // calls editorPart.addGroup(...)
+	}
+
+	// #3: Indicate whether we want to activate that group
+	const activation = EditorActivation.ACTIVATE;
+
+	return [targetGroup, activation];
+}
+*/

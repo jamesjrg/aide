@@ -4,20 +4,18 @@
  *--------------------------------------------------------------------------------------------*/
 
 import { IDisposable } from '../../../../base/common/lifecycle.js';
-import { IEditorOptions } from '../../../../platform/editor/common/editor.js';
 import { createDecorator } from '../../../../platform/instantiation/common/instantiation.js';
-import { PreviewPart } from '../../../browser/parts/preview/previewPart.js';
-import { IUntypedEditorInput, IEditorPane } from '../../../common/editor.js';
-import { EditorInput } from '../../../common/editor/editorInput.js';
-import { PreferredGroup } from '../../editor/common/editorService.js';
+import { IEditorPartsView } from '../../../browser/parts/editor/editor.js';
+import { IEditorPartUIState } from '../../../browser/parts/editor/editorPart.js';
+import { ICreatePreviewEditorPartResult, PreviewEditorPart } from '../../../browser/parts/preview/previewPart.js';
 
 export const IPreviewPartService = createDecorator<IPreviewPartService>('previewPartService');
 
 export interface IPreviewPartService {
 
 	readonly _serviceBrand: undefined;
-	readonly mainPart: PreviewPart;
-	getPart(container: HTMLElement): IDisposable; // Should be getOverlayedPart ?
-	openPreview(editor: EditorInput | IUntypedEditorInput, optionsOrPreferredGroup?: IEditorOptions | PreferredGroup, preferredGroup?: PreferredGroup): Promise<IEditorPane | undefined>;
+	readonly mainPart: PreviewEditorPart;
+	getPart(container: HTMLElement): IDisposable; // @g-danna Should be getOverlayedPart ?
+	getOrCreateEditorGroupPart(editorPartsView: IEditorPartsView, state?: IEditorPartUIState): ICreatePreviewEditorPartResult;
 	// createAuxiliaryPreviewPart(container: HTMLElement, editorsContainer: HTMLElement): PreviewPart;
 }
