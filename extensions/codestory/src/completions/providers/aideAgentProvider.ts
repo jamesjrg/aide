@@ -606,7 +606,11 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 								responseStream.stream.reference(vscode.Uri.file(filePath));
 							}
 						} else if (toolUseKey === 'AskFollowupQuestions') {
-							this.markLastMessageAsComplete(sessionId, exchangeId);
+							responseStream.stream.stage({ message: 'Complete' });
+							const openStreams = this.responseStreamCollection.getAllResponseStreams();
+							for (const stream of openStreams) {
+								this.closeAndRemoveResponseStream(sessionId, stream.exchangeId);
+							}
 						}
 					}
 				} else if (event.event.FrameworkEvent.ToolCallError) {
