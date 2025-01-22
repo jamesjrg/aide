@@ -201,14 +201,12 @@ export class ChatViewModel extends Disposable implements IChatViewModel {
 	}
 
 	private addItem(item: ChatRequestViewModel | ChatResponseViewModel) {
-		if (isResponseVM(item)) {
-			const clonedItems = this._items.slice();
-			const lastResponseVMIndex = clonedItems.reverse().findIndex(isResponseVM);
-			if (lastResponseVMIndex >= 0) {
-				const lastResponseVM = this._items.at(lastResponseVMIndex);
-				if (isResponseVM(lastResponseVM)) {
-					lastResponseVM.isLast = false;
-				}
+		// Clear the old last response no matter what we append
+		for (let i = this._items.length - 1; i >= 0; i--) {
+			const item = this._items[i];
+			if (isResponseVM(item) && item.isLast) {
+				item.isLast = false;
+				break;
 			}
 		}
 		this._items.push(item);

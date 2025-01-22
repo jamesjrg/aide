@@ -112,6 +112,7 @@ export interface IResponse {
 	readonly value: ReadonlyArray<IChatProgressResponseContent>;
 	getMarkdown(): string;
 	toString(): string;
+	responseRepr: string;
 }
 
 export interface IAideAgentEdits {
@@ -216,6 +217,9 @@ export class Response extends Disposable implements IResponse {
 	 * A stringified representation of response data which might be presented to a screenreader or used when copying a response.
 	 */
 	private _responseRepr = '';
+	get responseRepr() {
+		return this._responseRepr;
+	}
 
 	/**
 	 * Just the markdown content of the response, used for determining the rendering rate of markdown
