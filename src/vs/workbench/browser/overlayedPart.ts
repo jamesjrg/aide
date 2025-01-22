@@ -83,6 +83,14 @@ export abstract class OverlayedPart extends Component implements IOverlayedView 
 		return undefined;
 	}
 
+
+	/**
+	 * Returns the overall part container.
+	 */
+	getContainer(): HTMLElement | undefined {
+		return this.parent;
+	}
+
 	layout(newWidth: number, newHeight: number): void {
 		if (newWidth === this._width || newHeight === this._height) {
 			this._onDidSizeChange.fire({ width: newWidth, height: newHeight });

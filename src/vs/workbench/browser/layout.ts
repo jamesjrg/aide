@@ -180,6 +180,9 @@ export abstract class Layout extends Disposable implements IWorkbenchLayoutServi
 	private readonly _onDidChangeActiveContainer = this._register(new Emitter<void>());
 	readonly onDidChangeActiveContainer = this._onDidChangeActiveContainer.event;
 
+	private readonly _onDidChangePreviewVisibility = this._register(new Emitter<void>());
+	readonly onDidChangePreviewVisibility = this._onDidChangePreviewVisibility.event;
+
 	//#endregion
 
 	//#region Properties
@@ -293,6 +296,7 @@ export abstract class Layout extends Disposable implements IWorkbenchLayoutServi
 	private notificationService!: INotificationService;
 	private themeService!: IThemeService;
 	private statusBarService!: IStatusbarService;
+	private previewPartService!: IPreviewPartService;
 	private logService!: ILogService;
 	private telemetryService!: ITelemetryService;
 	private auxiliaryWindowService!: IAuxiliaryWindowService;
@@ -332,7 +336,7 @@ export abstract class Layout extends Disposable implements IWorkbenchLayoutServi
 		this.titleService = accessor.get(ITitleService);
 		this.notificationService = accessor.get(INotificationService);
 		this.statusBarService = accessor.get(IStatusbarService);
-		accessor.get(IPreviewPartService);
+		this.previewPartService = accessor.get(IPreviewPartService);
 		accessor.get(IBannerService);
 		accessor.get(IBottomBarPartService);
 
@@ -1143,20 +1147,29 @@ export abstract class Layout extends Disposable implements IWorkbenchLayoutServi
 		return part;
 	}
 
-	registerOverlayedPart(part: OverlayedPart): IDisposable {
-		const id = part.getId();
-		this.overlayedParts.set(id, part);
-
-		return toDisposable(() => this.parts.delete(id));
-	}
-
 	protected getOverlayedPart(key: OverlayedParts): OverlayedPart {
 		const part = this.overlayedParts.get(key);
 		if (!part) {
 			throw new Error(`Unknown overlayed part ${key}`);
 		}
-
 		return part;
+	}
+
+	protected getOverlayedOrRegularPart(key: Parts | OverlayedParts): Part | OverlayedPart {
+		if (this.parts.has(key)) {
+			return this.getPart(key as Parts);
+		}
+		if (this.overlayedParts.has(key)) {
+			return this.getOverlayedPart(key as OverlayedParts);
+		}
+		throw new Error(`Unknown part ${key}`);
+	}
+
+	registerOverlayedPart(part: OverlayedPart): IDisposable {
+		const id = part.getId();
+		this.overlayedParts.set(id, part);
+
+		return toDisposable(() => this.parts.delete(id));
 	}
 
 	registerNotifications(delegate: { onDidChangeNotificationsVisibility: Event<boolean> }): void {
@@ -1179,7 +1192,8 @@ export abstract class Layout extends Disposable implements IWorkbenchLayoutServi
 
 	focusPart(part: MULTI_WINDOW_PARTS, targetWindow: Window): void;
 	focusPart(part: SINGLE_WINDOW_PARTS): void;
-	focusPart(part: Parts, targetWindow: Window = mainWindow): void {
+	focusPart(part: Parts | OverlayedParts, targetWindow: Window = mainWindow): void {
+
 		const container = this.getContainer(targetWindow, part) ?? this.mainContainer;
 
 		switch (part) {
@@ -1204,6 +1218,9 @@ export abstract class Layout extends Disposable implements IWorkbenchLayoutServi
 			case Parts.STATUSBAR_PART:
 				this.statusBarService.getPart(container).focus();
 				break;
+			case OverlayedParts.PREVIEW_PART:
+				this.previewPartService.mainPart.focus();
+				break;
 			default: {
 				container?.focus();
 			}
@@ -1211,14 +1228,14 @@ export abstract class Layout extends Disposable implements IWorkbenchLayoutServi
 	}
 
 	getContainer(targetWindow: Window): HTMLElement;
-	getContainer(targetWindow: Window, part: Parts): HTMLElement | undefined;
-	getContainer(targetWindow: Window, part?: Parts): HTMLElement | undefined {
+	getContainer(targetWindow: Window, part: Parts | OverlayedParts): HTMLElement | undefined;
+	getContainer(targetWindow: Window, part?: Parts | OverlayedParts): HTMLElement | undefined {
 		if (typeof part === 'undefined') {
 			return this.getContainerFromDocument(targetWindow.document);
 		}
 
 		if (targetWindow === mainWindow) {
-			return this.getPart(part).getContainer();
+			return this.getOverlayedOrRegularPart(part).getContainer();
 		}
 
 		// Only some parts are supported for auxiliary windows
@@ -1231,7 +1248,7 @@ export abstract class Layout extends Disposable implements IWorkbenchLayoutServi
 			partCandidate = this.titleService.getPart(this.getContainerFromDocument(targetWindow.document));
 		}
 
-		if (partCandidate instanceof Part) {
+		if (partCandidate instanceof Part || partCandidate instanceof OverlayedPart) {
 			return partCandidate.getContainer();
 		}
 
@@ -1240,8 +1257,8 @@ export abstract class Layout extends Disposable implements IWorkbenchLayoutServi
 
 	isVisible(part: MULTI_WINDOW_PARTS, targetWindow: Window): boolean;
 	isVisible(part: SINGLE_WINDOW_PARTS): boolean;
-	isVisible(part: Parts, targetWindow?: Window): boolean;
-	isVisible(part: Parts, targetWindow: Window = mainWindow): boolean {
+	isVisible(part: Parts | OverlayedParts, targetWindow?: Window): boolean;
+	isVisible(part: Parts | OverlayedParts, targetWindow: Window = mainWindow): boolean {
 		if (targetWindow !== mainWindow && part === Parts.EDITOR_PART) {
 			return true; // cannot hide editor part in auxiliary windows
 		}
@@ -1264,6 +1281,8 @@ export abstract class Layout extends Disposable implements IWorkbenchLayoutServi
 					return !this.stateModel.getRuntimeValue(LayoutStateKeys.EDITOR_HIDDEN);
 				case Parts.BANNER_PART:
 					return this.workbenchGrid.isViewVisible(this.bannerPartView);
+				case OverlayedParts.PREVIEW_PART:
+					return !this.stateModel.getRuntimeValue(LayoutStateKeys.PREVIEW_HIDDEN);
 				default:
 					return false; // any other part cannot be hidden
 			}
@@ -1284,6 +1303,8 @@ export abstract class Layout extends Disposable implements IWorkbenchLayoutServi
 				return !this.stateModel.getRuntimeValue(LayoutStateKeys.ACTIVITYBAR_HIDDEN);
 			case Parts.EDITOR_PART:
 				return !this.stateModel.getRuntimeValue(LayoutStateKeys.EDITOR_HIDDEN);
+			case OverlayedParts.PREVIEW_PART:
+				return !this.stateModel.getRuntimeValue(LayoutStateKeys.PREVIEW_HIDDEN);
 			default:
 				return false; // any other part cannot be hidden
 		}
@@ -2012,6 +2033,45 @@ export abstract class Layout extends Disposable implements IWorkbenchLayoutServi
 		}
 	}
 
+	private setPreviewHidden(hidden: boolean, skipLayout?: boolean): void {
+
+		// Return if not initialized fully #105480
+		if (!this.workbenchGrid) {
+			return;
+		}
+
+		const wasHidden = !this.isVisible(OverlayedParts.PREVIEW_PART);
+
+		this.stateModel.setRuntimeValue(LayoutStateKeys.PREVIEW_HIDDEN, hidden);
+		this._onDidChangePreviewVisibility.fire();
+		// Adjust CSS
+		if (hidden) {
+			this.previewPartService.mainPart.element.style.visibility = 'hidden';
+		} else {
+			this.previewPartService.mainPart.element.style.visibility = 'visible';
+		}
+
+		// If panel part becomes hidden, also hide the current active panel if any
+		let focusEditor = false;
+		if (hidden) {
+			focusEditor = isIOS ? false : true; // Do not auto focus on ios #127832
+		}
+
+		// If panel part becomes visible, show last active panel or default panel
+		else if (!hidden) {
+			this.previewPartService.mainPart.activeGroup.focus();
+		}
+
+		// Don't proceed if we have already done this before
+		if (wasHidden === hidden) {
+			return;
+		}
+
+		if (focusEditor) {
+			this.editorGroupService.mainPart.activeGroup.focus(); // Pass focus to editor group if panel part is now hidden
+		}
+	}
+
 	toggleMaximizedPanel(): void {
 		const size = this.workbenchGrid.getViewSize(this.panelPartView);
 		const panelPosition = this.getPanelPosition();
@@ -2090,7 +2150,7 @@ export abstract class Layout extends Disposable implements IWorkbenchLayoutServi
 
 	setPartHidden(hidden: boolean, part: Exclude<SINGLE_WINDOW_PARTS, Parts.STATUSBAR_PART | Parts.TITLEBAR_PART>): void;
 	setPartHidden(hidden: boolean, part: Exclude<MULTI_WINDOW_PARTS, Parts.STATUSBAR_PART | Parts.TITLEBAR_PART>, targetWindow: Window): void;
-	setPartHidden(hidden: boolean, part: Parts, targetWindow: Window = mainWindow): void {
+	setPartHidden(hidden: boolean, part: Parts | OverlayedParts, targetWindow: Window = mainWindow): void {
 		switch (part) {
 			case Parts.ACTIVITYBAR_PART:
 				return this.setActivityBarHidden(hidden);
@@ -2104,6 +2164,8 @@ export abstract class Layout extends Disposable implements IWorkbenchLayoutServi
 				return this.setAuxiliaryBarHidden(hidden);
 			case Parts.PANEL_PART:
 				return this.setPanelHidden(hidden);
+			case OverlayedParts.PREVIEW_PART:
+				return this.setPreviewHidden(hidden);
 		}
 	}
 
@@ -2654,7 +2716,8 @@ const LayoutStateKeys = {
 	EDITOR_HIDDEN: new RuntimeStateKey<boolean>('editor.hidden', StorageScope.WORKSPACE, StorageTarget.MACHINE, false),
 	PANEL_HIDDEN: new RuntimeStateKey<boolean>('panel.hidden', StorageScope.WORKSPACE, StorageTarget.MACHINE, true),
 	AUXILIARYBAR_HIDDEN: new RuntimeStateKey<boolean>('auxiliaryBar.hidden', StorageScope.WORKSPACE, StorageTarget.MACHINE, false),
-	STATUSBAR_HIDDEN: new RuntimeStateKey<boolean>('statusBar.hidden', StorageScope.WORKSPACE, StorageTarget.MACHINE, false, true)
+	STATUSBAR_HIDDEN: new RuntimeStateKey<boolean>('statusBar.hidden', StorageScope.WORKSPACE, StorageTarget.MACHINE, false, true),
+	PREVIEW_HIDDEN: new RuntimeStateKey<boolean>('preview.hidden', StorageScope.WORKSPACE, StorageTarget.MACHINE, false, true)
 
 } as const;
 

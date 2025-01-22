@@ -96,6 +96,14 @@ export class PreviewEditorPart extends OverlayedPart implements IDisposable {
 		}
 	}
 
+
+	focus(): void {
+		const editorPart = this.editorCreationResults?.part;
+		if (editorPart) {
+			editorPart.activeGroup.focus();
+		}
+	}
+
 	toJSON(): object {
 		return {
 			type: OverlayedParts.PREVIEW_PART,
@@ -177,26 +185,3 @@ class PreviewEditorPartImpl extends EditorPart {
 		return; // disabled, preview editor part state is tracked outside
 	}
 }
-
-/*
-export async function findPreviewGroup(
-	accessor: ServicesAccessor,
-	editor: EditorInputWithOptions | IUntypedEditorInput,
-	preferredGroup?: PreferredGroup
-): Promise<[IEditorGroup, EditorActivation | undefined]> {
-	// #1: Get your preview part service and from that, the part that holds your custom EditorPart
-	const previewPartService = accessor.get(IPreviewPartService);
-	const previewPart = previewPartService.mainPart; // or whichever instance you want
-
-	// #2: Create or fetch the target group in your preview EditorPart
-	let targetGroup = previewPart.activeGroup;
-	if (!targetGroup) {
-		targetGroup = previewPart.addGroup(); // calls editorPart.addGroup(...)
-	}
-
-	// #3: Indicate whether we want to activate that group
-	const activation = EditorActivation.ACTIVATE;
-
-	return [targetGroup, activation];
-}
-*/

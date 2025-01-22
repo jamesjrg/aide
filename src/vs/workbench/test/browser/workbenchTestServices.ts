@@ -15,7 +15,7 @@ import { EditorServiceImpl, IEditorGroupView, IEditorGroupsView, IEditorGroupTit
 import { Event, Emitter } from '../../../base/common/event.js';
 import { IResolvedWorkingCopyBackup, IWorkingCopyBackupService } from '../../services/workingCopy/common/workingCopyBackup.js';
 import { IConfigurationService, ConfigurationTarget, IConfigurationValue } from '../../../platform/configuration/common/configuration.js';
-import { IWorkbenchLayoutService, PanelAlignment, Parts, Position as PartPosition } from '../../services/layout/browser/layoutService.js';
+import { IWorkbenchLayoutService, PanelAlignment, Parts, Position as PartPosition, OverlayedParts } from '../../services/layout/browser/layoutService.js';
 import { TextModelResolverService } from '../../services/textmodelResolver/common/textModelResolverService.js';
 import { ITextModelService } from '../../../editor/common/services/resolverService.js';
 import { IEditorOptions, IResourceEditorInput, IResourceEditorInputIdentifier, ITextResourceEditorInput, ITextEditorOptions } from '../../../platform/editor/common/editor.js';
@@ -633,16 +633,17 @@ export class TestLayoutService implements IWorkbenchLayoutService {
 	onDidChangeNotificationsVisibility = Event.None;
 	onDidAddContainer = Event.None;
 	onDidChangeActiveContainer = Event.None;
+	onDidChangePreviewVisibility: Event<void> = Event.None;
 
 	layout(): void { }
 	isRestored(): boolean { return true; }
 	whenReady: Promise<void> = Promise.resolve(undefined);
 	whenRestored: Promise<void> = Promise.resolve(undefined);
-	hasFocus(_part: Parts): boolean { return false; }
-	focusPart(_part: Parts): void { }
+	hasFocus(_part: Parts | OverlayedParts): boolean { return false; }
+	focusPart(_part: Parts | OverlayedParts): void { }
 	hasMainWindowBorder(): boolean { return false; }
 	getMainWindowBorderRadius(): string | undefined { return undefined; }
-	isVisible(_part: Parts): boolean { return true; }
+	isVisible(_part: Parts | OverlayedParts): boolean { return true; }
 	getContainer(): HTMLElement { return mainWindow.document.body; }
 	whenContainerStylesLoaded() { return undefined; }
 	isTitleBarHidden(): boolean { return false; }
@@ -654,7 +655,7 @@ export class TestLayoutService implements IWorkbenchLayoutService {
 	async setEditorHidden(_hidden: boolean): Promise<void> { }
 	async setSideBarHidden(_hidden: boolean): Promise<void> { }
 	async setAuxiliaryBarHidden(_hidden: boolean): Promise<void> { }
-	async setPartHidden(_hidden: boolean, part: Parts): Promise<void> { }
+	async setPartHidden(_hidden: boolean, part: Parts | OverlayedParts): Promise<void> { }
 	isPanelHidden(): boolean { return false; }
 	async setPanelHidden(_hidden: boolean): Promise<void> { }
 	toggleMaximizedPanel(): void { }

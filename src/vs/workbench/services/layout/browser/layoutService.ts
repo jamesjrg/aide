@@ -134,7 +134,7 @@ export function panelOpensMaximizedFromString(str: string): PanelOpensMaximizedO
 }
 
 export type MULTI_WINDOW_PARTS = Parts.EDITOR_PART | Parts.STATUSBAR_PART | Parts.TITLEBAR_PART;
-export type SINGLE_WINDOW_PARTS = Exclude<Parts, MULTI_WINDOW_PARTS>;
+export type SINGLE_WINDOW_PARTS = Exclude<Parts, MULTI_WINDOW_PARTS> | (typeof OverlayedParts)['PREVIEW_PART'];
 
 export interface IWorkbenchLayoutService extends ILayoutService {
 
@@ -169,6 +169,12 @@ export interface IWorkbenchLayoutService extends ILayoutService {
 	 * Emit when part visibility changes
 	 */
 	readonly onDidChangePartVisibility: Event<void>;
+
+	/**
+	 * Emit when preview visibility changes
+	 */
+
+	readonly onDidChangePreviewVisibility: Event<void>;
 
 	/**
 	 * Emit when notifications (toasts or center) visibility changes.

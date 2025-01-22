@@ -1,0 +1,26 @@
+/*---------------------------------------------------------------------------------------------
+ *  Copyright (c) Microsoft Corporation. All rights reserved.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
+ *--------------------------------------------------------------------------------------------*/
+
+.monaco-action-bar .action-item.fancy-toggle .action-label.icon {
+	width: 16px;
+	height: 16px;
+	background-repeat: no-repeat;
+	background-position: 50%;
+	background-size: 16px;
+}
+
+.monaco-action-bar .action-item.fancy-toggle.text-only .action-label {
+	color: var(--vscode-descriptionForeground);
+	overflow: hidden;
+	border-radius: 2px;
+}
+
+.monaco-action-bar .action-item.fancy-toggle.text-only.use-comma:not(:last-of-type) .action-label::after {
+	content: ', ';
+}
+
+.monaco-action-bar .action-item.fancy-toggle.text-only + .action-item:not(.text-only) > .monaco-dropdown .action-label {
+	color: var(--vscode-descriptionForeground);
+}

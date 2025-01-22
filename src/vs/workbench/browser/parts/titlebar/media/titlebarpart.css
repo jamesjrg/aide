@@ -89,6 +89,11 @@
 	justify-content: center;
 }
 
+.monaco-workbench .part.titlebar > .titlebar-container > .titlebar-center .preview-action-toolbar-container {
+	-webkit-app-region: no-drag;
+	margin-left: 10px;
+}
+
 .monaco-workbench .part.titlebar > .titlebar-container > .titlebar-right {
 	order: 2;
 	width: 20%;
