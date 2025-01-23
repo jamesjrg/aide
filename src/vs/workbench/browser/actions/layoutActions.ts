@@ -284,7 +284,7 @@ export class TogglePreviewAction extends Action2 {
 			title: localize2('togglePreview', "Toggle web app preview"),
 			category: Categories.View,
 			f1: true,
-			icon: Codicon.play,
+			icon: Codicon.browser,
 			// menu: [{
 			// 	id: MenuId.PreviewMenu,
 			// 	group: 'navigation',
@@ -308,7 +308,7 @@ MenuRegistry.appendMenuItem(MenuId.PreviewMenu, {
 		id: TogglePreviewAction.ID,
 		title: localize2('togglePreview.show', "Show web app preview"),
 		icon: Codicon.code,
-		toggled: { condition: ContextKeyExpr.equals(PreviewVisibleContext.key, true), icon: Codicon.play, title: localize2('togglePreview.show', "Show web app preview").value }
+		toggled: { condition: ContextKeyExpr.equals(PreviewVisibleContext.key, true), icon: Codicon.browser, title: localize2('togglePreview.show', "Show web app preview").value }
 	},
 });
 
