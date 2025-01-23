@@ -325,6 +325,7 @@ export async function activate(context: vscode.ExtensionContext) {
 				const proxyedUrl = new URL(parsedUrl);
 				proxyedUrl.port = proxyedPort.toString();
 				simpleBrowserManager.show(proxyedUrl.href, { originalUrl: url, inPreview: true });
+				vscode.commands.executeCommand('workbench.action.showPreview');
 			} else {
 				console.error('Devtools are not ready');
 			}

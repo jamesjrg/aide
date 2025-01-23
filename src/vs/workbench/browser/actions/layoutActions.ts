@@ -269,6 +269,41 @@ MenuRegistry.appendMenuItem(MenuId.MenubarViewMenu, {
 
 // Toggle Preview visibility
 
+
+export class ShowPreviewAction extends Action2 {
+
+	static readonly ID = 'workbench.action.showPreview';
+	static readonly LABEL = localize('togglePreview', "Toggle web app preview");
+
+	static getLabel(layoutService: IWorkbenchLayoutService): string {
+		return layoutService.getSideBarPosition() === Position.LEFT ? localize('moveSidebarRight', "Move Primary Side Bar Right") : localize('moveSidebarLeft', "Move Primary Side Bar Left");
+	}
+
+	constructor() {
+		super({
+			id: ShowPreviewAction.ID,
+			title: localize2('showPreview', "Show web app preview"),
+			category: Categories.View,
+			f1: true,
+			icon: Codicon.browser,
+			// menu: [{
+			// 	id: MenuId.PreviewMenu,
+			// 	group: 'navigation',
+			// }]
+		});
+	}
+
+	run(accessor: ServicesAccessor): void {
+		const layoutService = accessor.get(IWorkbenchLayoutService);
+		const isPreviewVisible = layoutService.isVisible(OverlayedParts.PREVIEW_PART);
+		if (!isPreviewVisible) {
+			layoutService.setPartHidden(false, OverlayedParts.PREVIEW_PART);
+		}
+	}
+}
+
+registerAction2(ShowPreviewAction);
+
 export class TogglePreviewAction extends Action2 {
 
 	static readonly ID = 'workbench.action.togglePreview';

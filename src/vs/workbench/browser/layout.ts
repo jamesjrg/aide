@@ -2047,8 +2047,10 @@ export abstract class Layout extends Disposable implements IWorkbenchLayoutServi
 		// Adjust CSS
 		if (hidden) {
 			this.previewPartService.mainPart.element.style.visibility = 'hidden';
+			this.previewPartService.mainPart.hide();
 		} else {
 			this.previewPartService.mainPart.element.style.visibility = 'visible';
+			this.previewPartService.mainPart.focus();
 		}
 
 		// If panel part becomes hidden, also hide the current active panel if any
@@ -2717,7 +2719,7 @@ const LayoutStateKeys = {
 	PANEL_HIDDEN: new RuntimeStateKey<boolean>('panel.hidden', StorageScope.WORKSPACE, StorageTarget.MACHINE, true),
 	AUXILIARYBAR_HIDDEN: new RuntimeStateKey<boolean>('auxiliaryBar.hidden', StorageScope.WORKSPACE, StorageTarget.MACHINE, false),
 	STATUSBAR_HIDDEN: new RuntimeStateKey<boolean>('statusBar.hidden', StorageScope.WORKSPACE, StorageTarget.MACHINE, false, true),
-	PREVIEW_HIDDEN: new RuntimeStateKey<boolean>('preview.hidden', StorageScope.WORKSPACE, StorageTarget.MACHINE, false, true)
+	PREVIEW_HIDDEN: new RuntimeStateKey<boolean>('preview.hidden', StorageScope.WORKSPACE, StorageTarget.MACHINE, true, true)
 
 } as const;
 

@@ -15,6 +15,7 @@ import { IContextKeyService } from '../../../../platform/contextkey/common/conte
 import { IHostService } from '../../../services/host/browser/host.js';
 import { IEditorGroupView, IEditorPartsView } from '../editor/editor.js';
 import { EditorPart, IEditorPartUIState } from '../editor/editorPart.js';
+import { getWindow } from '../../../../base/browser/dom.js';
 
 
 export interface IPreviewEditorPartOpenOptions {
@@ -57,6 +58,10 @@ export class PreviewEditorPart extends OverlayedPart implements IDisposable {
 	}
 
 	override createContentArea(parent: HTMLElement): HTMLElement {
+
+		// starts invisible by default
+		parent.style.visibility = 'hidden';
+
 		// Main container for your preview part
 		const container = document.createElement('div');
 		container.classList.add('preview-part-content');
@@ -75,16 +80,19 @@ export class PreviewEditorPart extends OverlayedPart implements IDisposable {
 			const editorPart = disposables.add(this.instantiationService.createInstance(PreviewEditorPartImpl, editorPartsView, state));
 			editorPart.create(this.editorPartContainer);
 
-			const editorCreationResults = {
+			this.editorCreationResults = {
 				part: editorPart,
 				instantiationService: this.instantiationService,
 				disposables: disposables
 			};
-			this.editorCreationResults = editorCreationResults;
-			return editorCreationResults;
-		} else {
-			return this.editorCreationResults;
 		}
+
+		// Temporary workaround to display for now
+		getWindow(this.element).setTimeout(() => {
+			this.layout(this.width, this.height);
+		}, 10);
+
+		return this.editorCreationResults;
 	}
 
 	override layout(width: number, height: number): void {
@@ -96,12 +104,25 @@ export class PreviewEditorPart extends OverlayedPart implements IDisposable {
 		}
 	}
 
+	hide(): void {
+		const editorPart = this.editorCreationResults?.part;
+		if (editorPart) {
+			editorPart.setVisible(false);
+		}
+	}
+
 
 	focus(): void {
 		const editorPart = this.editorCreationResults?.part;
+
 		if (editorPart) {
+			editorPart.setVisible(true);
 			editorPart.activeGroup.focus();
 		}
+		// Temporary workaround to display for now
+		getWindow(this.element).setTimeout(() => {
+			this.layout(this.width, this.height);
+		}, 10);
 	}
 
 	toJSON(): object {
