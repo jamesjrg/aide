@@ -181,6 +181,7 @@ export class WorkbenchContextKeysHandler extends Disposable {
 
 		// Preview
 		this.previewVisibleContext = PreviewVisibleContext.bindTo(this.contextKeyService);
+		this.updateVisiblePreviewContextKeys();
 
 		// Title Bar
 		this.titleAreaVisibleContext = TitleBarVisibleContext.bindTo(this.contextKeyService);
@@ -258,10 +259,14 @@ export class WorkbenchContextKeysHandler extends Disposable {
 		}));
 
 		this._register(this.layoutService.onDidChangePreviewVisibility(() => {
-			this.previewVisibleContext.set(this.layoutService.isVisible(OverlayedParts.PREVIEW_PART));
+			this.updateVisiblePreviewContextKeys();
 		}));
 
 		this._register(this.workingCopyService.onDidChangeDirty(workingCopy => this.dirtyWorkingCopiesContext.set(workingCopy.isDirty() || this.workingCopyService.hasDirty)));
+	}
+
+	private updateVisiblePreviewContextKeys() {
+		this.previewVisibleContext.set(this.layoutService.isVisible(OverlayedParts.PREVIEW_PART));
 	}
 
 	private updateVisiblePanesContextKeys(): void {

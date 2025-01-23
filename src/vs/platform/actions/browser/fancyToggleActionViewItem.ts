@@ -11,9 +11,9 @@ import { IContextKeyService } from '../../contextkey/common/contextkey.js';
 import { IThemeService } from '../../theme/common/themeService.js';
 import { localize } from '../../../nls.js';
 import { MenuItemAction } from '../common/actions.js';
-import { isICommandActionToggleInfo } from '../../action/common/action.js';
+import { Icon, isICommandActionToggleInfo } from '../../action/common/action.js';
 import { ThemeIcon } from '../../../base/common/themables.js';
-import { combinedDisposable, MutableDisposable, toDisposable } from '../../../base/common/lifecycle.js';
+import { DisposableStore, toDisposable } from '../../../base/common/lifecycle.js';
 import { isDark } from '../../theme/common/theme.js';
 import { asCSSUrl } from '../../../base/browser/cssValue.js';
 import { ActionRunner } from '../../../base/common/actions.js';
@@ -34,13 +34,18 @@ export function isMenuToggleItemAction(action: MenuItemAction): action is MenuTo
 }
 
 export class FancyToggleActionViewItem extends BaseActionViewItem {
+	private static readonly lastCheckedState = new Map<string, boolean>();
 
-	private readonly _itemClassDispose = this._register(new MutableDisposable());
 	private _container!: HTMLElement;
 	private _label!: HTMLElement;
 
-	// Keep track of each action's last-known "checked" state
-	private static readonly lastCheckedState = new Map<string, boolean>();
+	// Store references to separate elements for untoggled/toggled icons:
+	private _untoggledIcon!: HTMLSpanElement;
+	private _toggledIcon!: HTMLSpanElement;
+
+	// Disposables for each icon's dynamic styling (so we can clean up old classes)
+	private readonly _untoggledIconDispose = this._register(new DisposableStore());
+	private readonly _toggledIconDispose = this._register(new DisposableStore());
 
 	protected get _menuItemAction(): MenuItemAction {
 		return <MenuItemAction>this._action;
@@ -48,15 +53,13 @@ export class FancyToggleActionViewItem extends BaseActionViewItem {
 
 	constructor(
 		context: unknown,
-		action: MenuToggleItemAction,
+		action: MenuItemAction /* (with .checked always boolean) */,
 		private readonly _options: IFancyToggleActionViewItemOptions | undefined,
 		@IKeybindingService private readonly _keybindingService: IKeybindingService,
 		@IContextKeyService private readonly _contextKeyService: IContextKeyService,
 		@IThemeService private readonly _themeService: IThemeService,
 	) {
 		super(context, action, _options);
-
-		// (Optional) use custom ActionRunner
 		this.actionRunner = new ActionRunner();
 	}
 
@@ -69,6 +72,7 @@ export class FancyToggleActionViewItem extends BaseActionViewItem {
 		label.classList.add('action-label', 'fancy-toggle-handle');
 		label.setAttribute('role', 'checkbox');
 		label.tabIndex = -1;
+
 		this._label = label;
 		container.appendChild(label);
 
@@ -81,10 +85,19 @@ export class FancyToggleActionViewItem extends BaseActionViewItem {
 			})
 		);
 
-		// Set initial final state (i.e. new checked or unchecked)
+		// Prepare the icon elements
+		this._untoggledIcon = document.createElement('span');
+		this._untoggledIcon.classList.add('fancy-toggle-icon', 'untoggled-icon');
+		label.appendChild(this._untoggledIcon);
+
+		this._toggledIcon = document.createElement('span');
+		this._toggledIcon.classList.add('fancy-toggle-icon', 'toggled-icon');
+		label.appendChild(this._toggledIcon);
+
+		// Set initial final state
 		this._updateInformation();
 
-		// Then see if we can animate from the old state to the new:
+		// Animate transition based on the *previous* known checked state
 		this._applyInitialCheckedStateForTransition();
 
 		super.render(container);
@@ -108,7 +121,7 @@ export class FancyToggleActionViewItem extends BaseActionViewItem {
 	}
 
 	override isFocused(): boolean {
-		return !!this._label && this._label?.tabIndex === 0;
+		return !!this._label && this._label.tabIndex === 0;
 	}
 
 	override setFocusable(focusable: boolean): void {
@@ -124,7 +137,6 @@ export class FancyToggleActionViewItem extends BaseActionViewItem {
 		super.onClick(event);
 	}
 
-	// Update label, tooltip, aria-checked, and other final state
 	private _updateInformation(): void {
 		if (!this._container || !this._label) {
 			return;
@@ -147,16 +159,15 @@ export class FancyToggleActionViewItem extends BaseActionViewItem {
 			this._label.setAttribute('aria-disabled', 'true');
 		}
 
-		if (this._action.checked === true || this._action.checked === false) {
-			this._label.setAttribute('role', 'checkbox');
-			this._label.setAttribute('aria-checked', this._action.checked ? 'true' : 'false');
-		} else {
-			// Not a toggle
-			this._label.setAttribute('role', 'button');
-			this._label.removeAttribute('aria-checked');
-		}
+		// Always treat it like a checkbox:
+		this._label.setAttribute('aria-checked', this.action.checked ? 'true' : 'false');
+	}
 
-		// Styles will be updated differently
+	// No more toggling the entire logic for is or isn't a toggle;
+	// just always apply the fancy-toggle-checked class:
+	private _updateStyles(checked: boolean) {
+		this._container.classList.toggle('fancy-toggle-checked', checked);
+		this._updateIcon(checked);
 	}
 
 	private _getTooltip(): string | undefined {
@@ -174,65 +185,89 @@ export class FancyToggleActionViewItem extends BaseActionViewItem {
 		return tooltip || undefined;
 	}
 
-	private _updateStyles(checked: boolean) {
-		if (checked === true || checked === false) {
-			this._container.classList.toggle('fancy-toggle-checked', !!checked);
-		} else {
-			// Not a toggle
-			this._container.classList.remove('fancy-toggle-checked');
-		}
-		this._updateIcon(checked);
-	}
-
 	private _updateIcon(checked: boolean): void {
 		if (!this._label || !this._container) {
 			return;
 		}
-
 		const actionItem = this._menuItemAction.item;
 		if (!actionItem) {
 			return;
 		}
 
-		// Remove old dynamic classes
-		this._itemClassDispose.value = undefined;
-		this._label.style.backgroundImage = '';
+		// Clear old dynamic classes/disposables first:
+		this._untoggledIconDispose.clear();
+		this._toggledIconDispose.clear();
 
-		// Show toggled icon if checked and toggled info is present, else normal icon
-		const icon =
+		// "untoggled" icon from actionItem.icon
+		this._applyIconToElement(
+			this._untoggledIcon,
+			actionItem.icon,
+			this._untoggledIconDispose
+		);
+
+		// "toggled" icon from actionItem.toggled.icon (assuming .toggled is set)
+		// If the item is declared as a toggle, it presumably has toggled info:
+		const toggleIcon =
 			checked &&
 				isICommandActionToggleInfo(actionItem.toggled) &&
 				actionItem.toggled.icon
 				? actionItem.toggled.icon
 				: actionItem.icon;
 
+		this._applyIconToElement(
+			this._toggledIcon,
+			toggleIcon,
+			this._toggledIconDispose
+		);
+
+		// Now control which one is visible by setting opacity:
+		this._untoggledIcon.style.opacity = checked ? '0' : '1';
+		this._toggledIcon.style.opacity = checked ? '1' : '0';
+	}
+
+	// Helper: apply path-based or theme-based icon to a specific element
+	private _applyIconToElement(
+		element: HTMLElement,
+		icon: Icon | undefined,
+		store: DisposableStore
+	): void {
+		// Remove old theme classes / background first
+		element.classList.remove(...Array.from(element.classList).filter(c => c.startsWith('codicon-')));
+		element.style.backgroundImage = '';
+
+		// If no icon is defined, just stop
 		if (!icon) {
-			return; // No icon
+			return;
 		}
 
 		if (ThemeIcon.isThemeIcon(icon)) {
+			// Theme-based icon
 			const iconClasses = ThemeIcon.asClassNameArray(icon);
-			this._label.classList.add(...iconClasses);
-
-			// Clean up old classes on dispose
-			this._itemClassDispose.value = toDisposable(() => {
-				this._label?.classList.remove(...iconClasses);
-			});
+			element.classList.add(...iconClasses);
+			store.add(
+				toDisposable(() => {
+					element.classList.remove(...iconClasses);
+				})
+			);
 		} else {
-			// If it's a path-based icon
+			// Path-based icon (light/dark)
 			const themeType = this._themeService.getColorTheme().type;
 			const iconPath = isDark(themeType) ? icon.dark : icon.light;
-			this._label.style.backgroundImage = `url(${asCSSUrl(iconPath)})`;
+			element.style.backgroundImage = `url(${asCSSUrl(iconPath)})`;
 
-			// Re-apply on theme change
-			this._itemClassDispose.value = combinedDisposable(
-				toDisposable(() => {
-					if (this._label) {
-						this._label.style.backgroundImage = '';
-					}
-				}),
+			// Re-apply on theme changes
+			store.add(
 				this._themeService.onDidColorThemeChange(() => {
-					this._updateIcon(this.action.checked || false);
+					const newThemeType = this._themeService.getColorTheme().type;
+					const newIconPath = isDark(newThemeType) ? icon.dark : icon.light;
+					element.style.backgroundImage = `url(${asCSSUrl(newIconPath)})`;
+				})
+			);
+
+			// Clean up if we remove the icon
+			store.add(
+				toDisposable(() => {
+					element.style.backgroundImage = '';
 				})
 			);
 		}
@@ -247,14 +282,16 @@ export class FancyToggleActionViewItem extends BaseActionViewItem {
 		const newChecked = !!this.action.checked;
 
 		// If first time or no change, do nothing
-		if (oldChecked === undefined || oldChecked === newChecked) {
+		if (oldChecked === undefined) {
 			return;
 		}
 
-		// Force old visuals
 		this._updateStyles(oldChecked);
 
-		// Then animate to the new state in the next frame
+		if (oldChecked === newChecked) {
+			return;
+		}
+
 		getWindow(this._container).requestAnimationFrame(() => {
 			getWindow(this._container).requestAnimationFrame(() => {
 				this._updateStyles(newChecked);
