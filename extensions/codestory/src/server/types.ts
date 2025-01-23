@@ -793,6 +793,7 @@ export type SidecarListFilesOutput = {
 
 export type SidecarExecuteTerminalCommandRequest = {
 	command: string;
+	wait_for_exit: boolean;
 };
 
 interface OpenFileRequest {
