@@ -700,7 +700,7 @@ export class BrowserTitlebarPart extends Part implements ITitlebarPart {
 			getKeyBinding: action => this.getKeybinding(action),
 			actionViewItemProvider: (action, options) => {
 				if (action instanceof MenuItemAction) {
-					return this.instantiationService.createInstance(FancyToggleActionViewItem, action, options);
+					return this.instantiationService.createInstance(FancyToggleActionViewItem, undefined, action, options);
 				} else {
 					return undefined;
 				}
