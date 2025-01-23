@@ -28,15 +28,15 @@ export interface IFancyToggleActionViewItemOptions {
 export class FancyToggleActionViewItem extends BaseActionViewItem {
 
 	private readonly _itemClassDispose = this._register(new MutableDisposable());
+	private _container!: HTMLElement;
+	private _label!: HTMLElement;
 
-	private _container: HTMLElement | undefined;
-	private _label: HTMLElement | undefined;
+	// Keep track of each action's last-known "checked" state
+	private static readonly lastCheckedState = new Map<string, boolean>();
 
 	protected get _menuItemAction(): MenuItemAction {
 		return <MenuItemAction>this._action;
 	}
-
-	private static readonly lastCheckedState = new Map<string, boolean>();
 
 	constructor(
 		context: unknown,
@@ -47,24 +47,20 @@ export class FancyToggleActionViewItem extends BaseActionViewItem {
 		@IThemeService private readonly _themeService: IThemeService,
 	) {
 		super(context, action, _options);
-		// If you also want a custom ActionRunner, set it here:
+
+		// (Optional) use custom ActionRunner
 		this.actionRunner = new ActionRunner();
 	}
 
-	// Create DOM elements exactly once and attach them to "container"
 	override render(container: HTMLElement): void {
-
 		this._container = container;
 		container.classList.add('fancy-toggle');
 
-
-		// Create a child <a> to act as our "handle" or clickable label
+		// Create the "handle" <a>
 		const label = document.createElement('a');
 		label.classList.add('action-label', 'fancy-toggle-handle');
-		// Use "button" or "checkbox" role for toggles (depending on your exact need)
 		label.setAttribute('role', 'checkbox');
-		label.tabIndex = -1; // setFocusable() will manage this
-
+		label.tabIndex = -1;
 		this._label = label;
 		container.appendChild(label);
 
@@ -77,22 +73,18 @@ export class FancyToggleActionViewItem extends BaseActionViewItem {
 			})
 		);
 
-		// If you want to handle mouseenter/leave or altKey toggling, do so here
-		// e.g.: this._setupAltCommandListeners();
-		// for brevity, omitted.
+		// Set initial final state (i.e. new checked or unchecked)
+		this._updateInformation();
 
-		// Sync initial state
-		this._updateAll();
-
+		// Then see if we can animate from the old state to the new:
 		this._applyInitialCheckedStateForTransition();
+
 		super.render(container);
 
-		// (Optional) Also watch for changes in the theme
-		this._register(this._themeService.onDidColorThemeChange(() => this._updateAll()));
-
+		// Watch for theme changes
+		this._register(this._themeService.onDidColorThemeChange(() => this._updateInformation()));
 	}
 
-	// Implement the same focus/blur logic as ActionViewItem for keyboard accessibility
 	override focus(): void {
 		if (this._label) {
 			this._label.tabIndex = 0;
@@ -117,7 +109,6 @@ export class FancyToggleActionViewItem extends BaseActionViewItem {
 		}
 	}
 
-	// Like ActionViewItem, run the action on click, handle errors
 	override async onClick(event: MouseEvent): Promise<void> {
 		if (!this.action.enabled) {
 			return;
@@ -125,15 +116,14 @@ export class FancyToggleActionViewItem extends BaseActionViewItem {
 		super.onClick(event);
 	}
 
-	// Gather and apply all state: label text, tooltip, enabled, checked, icons, etc
-	private _updateAll(): void {
+	// Update label, tooltip, aria-checked, and other final state
+	private _updateInformation(): void {
 		if (!this._container || !this._label) {
 			return;
 		}
 
 		// Update label text
 		this._label.textContent = this.action.label;
-		// Or if you have alt commands, choose whichever label is relevant
 
 		// Update tooltip
 		const tooltip = this._getTooltip();
@@ -153,30 +143,15 @@ export class FancyToggleActionViewItem extends BaseActionViewItem {
 			this._label.classList.add('disabled');
 			this._label.setAttribute('aria-disabled', 'true');
 		}
-
-		// Update "checked" state
-		// For toggleable actions, set role=checkbox + aria-checked
-		if (this.action.checked === true || this.action.checked === false) {
-			this._label.setAttribute('role', 'checkbox');
-			this._label.setAttribute('aria-checked', this.action.checked ? 'true' : 'false');
-			this._container.classList.toggle('fancy-toggle-checked', !!this.action.checked);
-		} else {
-			// If not a toggle, revert to normal button role
-			this._label.setAttribute('role', 'button');
-			this._label.removeAttribute('aria-checked');
-			this._container.classList.remove('fancy-toggle-checked');
-		}
-
-		// If you have a toggled icon vs. normal icon, handle it here
-		this._updateIcon();
+		// Styles will be updated later
 	}
 
 	private _getTooltip(): string | undefined {
 		const keybinding = this._options?.keybinding
 			? this._keybindingService.lookupKeybinding(this.action.id, this._contextKeyService)
 			: undefined;
-		let tooltip = this.action.tooltip || this.action.label;
 
+		let tooltip = this.action.tooltip || this.action.label;
 		if (tooltip && keybinding) {
 			const kbLabel = keybinding.getLabel();
 			if (kbLabel) {
@@ -186,7 +161,22 @@ export class FancyToggleActionViewItem extends BaseActionViewItem {
 		return tooltip || undefined;
 	}
 
-	private _updateIcon(): void {
+	private _updateStyles(checked: boolean) {
+		if (checked === true || checked === false) {
+			this._label.setAttribute('role', 'checkbox');
+			this._label.setAttribute('aria-checked', checked ? 'true' : 'false');
+			this._container.classList.toggle('fancy-toggle-checked', !!checked);
+		} else {
+			// Not a toggle
+			this._label.setAttribute('role', 'button');
+			this._label.removeAttribute('aria-checked');
+			this._container.classList.remove('fancy-toggle-checked');
+		}
+
+		this._updateIcon(checked);
+	}
+
+	private _updateIcon(checked: boolean): void {
 		if (!this._label || !this._container) {
 			return;
 		}
@@ -196,32 +186,32 @@ export class FancyToggleActionViewItem extends BaseActionViewItem {
 			return;
 		}
 
-		// Possibly remove old dynamic classes:
+		// Remove old dynamic classes
 		this._itemClassDispose.value = undefined;
 		this._label.style.backgroundImage = '';
 
-		// Show toggled.icon if checked and if toggled info is present, else show normal icon
+		// Show toggled icon if checked and toggled info is present, else normal icon
 		const icon =
-			this.action.checked &&
+			checked &&
 				isICommandActionToggleInfo(actionItem.toggled) &&
 				actionItem.toggled.icon
 				? actionItem.toggled.icon
 				: actionItem.icon;
+
 		if (!icon) {
-			return; // no icon
+			return; // No icon
 		}
 
-		// If it's a theme icon, use classes
 		if (ThemeIcon.isThemeIcon(icon)) {
 			const iconClasses = ThemeIcon.asClassNameArray(icon);
 			this._label.classList.add(...iconClasses);
 
-			// Clean up old classes on disposal
+			// Clean up old classes on dispose
 			this._itemClassDispose.value = toDisposable(() => {
 				this._label?.classList.remove(...iconClasses);
 			});
 		} else {
-			// If it's a path-based icon, set it as background-image
+			// If it's a path-based icon
 			const themeType = this._themeService.getColorTheme().type;
 			const iconPath = isDark(themeType) ? icon.dark : icon.light;
 			this._label.style.backgroundImage = `url(${asCSSUrl(iconPath)})`;
@@ -233,7 +223,9 @@ export class FancyToggleActionViewItem extends BaseActionViewItem {
 						this._label.style.backgroundImage = '';
 					}
 				}),
-				this._themeService.onDidColorThemeChange(() => this._updateIcon())
+				this._themeService.onDidColorThemeChange(() => {
+					this._updateIcon(this.action.checked || false);
+				})
 			);
 		}
 	}
@@ -246,34 +238,24 @@ export class FancyToggleActionViewItem extends BaseActionViewItem {
 		const oldChecked = FancyToggleActionViewItem.lastCheckedState.get(this.action.id);
 		const newChecked = !!this.action.checked;
 
-		if (oldChecked === undefined) {
-			// First time seeing this action.id, no transition needed
-			// (or you could default it to some known state)
+		// If first time or no change, do nothing
+		if (oldChecked === undefined || oldChecked === newChecked) {
 			return;
 		}
 
-		if (oldChecked !== newChecked) {
-			// They differ, so "fake" a transition from the old state to the new state
-			// by first forcing the old state on our DOM...
-			this._forceCheckedVisual(oldChecked);
+		// Force old visuals
+		this._updateStyles(oldChecked);
 
-			// Then wait a tick and re-apply the real/new checked state to see the toggle animate
+		// Then animate to the new state in the next frame
+		getWindow(this._container).requestAnimationFrame(() => {
 			getWindow(this._container).requestAnimationFrame(() => {
-				this._forceCheckedVisual(newChecked);
+				this._updateStyles(newChecked);
 			});
-		}
+		});
 	}
 
-	// Helper to force a .checked state visually without changing this.action
-	private _forceCheckedVisual(isChecked: boolean): void {
-		this._container!.classList.toggle('fancy-toggle-checked', isChecked);
-		this._label!.setAttribute('aria-checked', String(isChecked));
-		// Any other DOM manipulations (such as handle position or icon) that you do in _updateAll()
-		// could be repeated here to sync the "fake" state.
-	}
-
-
-	override dispose() {
+	// On dispose, remember the final state
+	override dispose(): void {
 		FancyToggleActionViewItem.lastCheckedState.set(this.action.id, !!this.action.checked);
 		super.dispose();
 	}
