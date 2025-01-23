@@ -25,6 +25,14 @@ export interface IFancyToggleActionViewItemOptions {
 	hoverDelegate?: IHoverDelegate;
 }
 
+export interface MenuToggleItemAction extends MenuItemAction {
+	checked: boolean;
+}
+
+export function isMenuToggleItemAction(action: MenuItemAction): action is MenuToggleItemAction {
+	return action.checked === true || action.checked === false;
+}
+
 export class FancyToggleActionViewItem extends BaseActionViewItem {
 
 	private readonly _itemClassDispose = this._register(new MutableDisposable());
@@ -40,7 +48,7 @@ export class FancyToggleActionViewItem extends BaseActionViewItem {
 
 	constructor(
 		context: unknown,
-		action: MenuItemAction,
+		action: MenuToggleItemAction,
 		private readonly _options: IFancyToggleActionViewItemOptions | undefined,
 		@IKeybindingService private readonly _keybindingService: IKeybindingService,
 		@IContextKeyService private readonly _contextKeyService: IContextKeyService,
@@ -122,10 +130,6 @@ export class FancyToggleActionViewItem extends BaseActionViewItem {
 			return;
 		}
 
-		// Update label text
-		this._label.textContent = this.action.label;
-
-		// Update tooltip
 		const tooltip = this._getTooltip();
 		if (tooltip) {
 			this._label.title = tooltip;
@@ -135,7 +139,6 @@ export class FancyToggleActionViewItem extends BaseActionViewItem {
 			this._label.removeAttribute('aria-label');
 		}
 
-		// Update enabled
 		if (this.action.enabled) {
 			this._label.classList.remove('disabled');
 			this._label.removeAttribute('aria-disabled');
@@ -143,7 +146,17 @@ export class FancyToggleActionViewItem extends BaseActionViewItem {
 			this._label.classList.add('disabled');
 			this._label.setAttribute('aria-disabled', 'true');
 		}
-		// Styles will be updated later
+
+		if (this._action.checked === true || this._action.checked === false) {
+			this._label.setAttribute('role', 'checkbox');
+			this._label.setAttribute('aria-checked', this._action.checked ? 'true' : 'false');
+		} else {
+			// Not a toggle
+			this._label.setAttribute('role', 'button');
+			this._label.removeAttribute('aria-checked');
+		}
+
+		// Styles will be updated differently
 	}
 
 	private _getTooltip(): string | undefined {
@@ -163,16 +176,11 @@ export class FancyToggleActionViewItem extends BaseActionViewItem {
 
 	private _updateStyles(checked: boolean) {
 		if (checked === true || checked === false) {
-			this._label.setAttribute('role', 'checkbox');
-			this._label.setAttribute('aria-checked', checked ? 'true' : 'false');
 			this._container.classList.toggle('fancy-toggle-checked', !!checked);
 		} else {
 			// Not a toggle
-			this._label.setAttribute('role', 'button');
-			this._label.removeAttribute('aria-checked');
 			this._container.classList.remove('fancy-toggle-checked');
 		}
-
 		this._updateIcon(checked);
 	}
 

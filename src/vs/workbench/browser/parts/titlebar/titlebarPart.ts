@@ -54,7 +54,7 @@ import { IHoverDelegate } from '../../../../base/browser/ui/hover/hoverDelegate.
 import { CommandsRegistry } from '../../../../platform/commands/common/commands.js';
 import { safeIntl } from '../../../../base/common/date.js';
 import { TitleBarVisibleContext } from '../../../common/contextkeys.js';
-import { FancyToggleActionViewItem } from '../../../../platform/actions/browser/fancyToggleActionViewItem.js';
+import { FancyToggleActionViewItem, isMenuToggleItemAction } from '../../../../platform/actions/browser/fancyToggleActionViewItem.js';
 
 export interface ITitleVariable {
 	readonly name: string;
@@ -699,7 +699,7 @@ export class BrowserTitlebarPart extends Part implements ITitlebarPart {
 			ariaLabel: localize('ariaLabelTitlePreviewActions', "Preview actions"),
 			getKeyBinding: action => this.getKeybinding(action),
 			actionViewItemProvider: (action, options) => {
-				if (action instanceof MenuItemAction) {
+				if (action instanceof MenuItemAction && isMenuToggleItemAction(action)) {
 					return this.instantiationService.createInstance(FancyToggleActionViewItem, undefined, action, options);
 				} else {
 					return undefined;
