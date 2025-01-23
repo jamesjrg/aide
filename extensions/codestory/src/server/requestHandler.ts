@@ -233,7 +233,7 @@ export function handleRequest(
 				const body = await readRequestBody(req);
 				const request: SidecarExecuteTerminalCommandRequest = JSON.parse(body);
 				// always pass in the workspace over here not the process.cwd which would be wrong
-				const response = await executeTerminalCommand(request.command, workspace.rootPath ?? '');
+				const response = await executeTerminalCommand(request.command, workspace.rootPath ?? '', request.wait_for_exit);
 				res.writeHead(200, { 'Content-Type': 'application/json' });
 				res.end(JSON.stringify({ output: response }));
 			} else {

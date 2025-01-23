@@ -192,7 +192,11 @@ export class TerminalManager {
 	}
 }
 
-export async function executeTerminalCommand(command: string, cwd: string = process.cwd()): Promise<string> {
+export async function executeTerminalCommand(
+	command: string,
+	cwd: string = process.cwd(),
+	wait_for_exit: boolean = true
+): Promise<string> {
 	// Create a terminal manager instance
 	const terminalManager = new TerminalManager();
 
@@ -206,21 +210,19 @@ export async function executeTerminalCommand(command: string, cwd: string = proc
 			buffer += line + '\n';
 		});
 
-		// wait at most 10 seconds, instead of indefinetly waiting for things to happen
-		try {
-			await pTimeout(process, { milliseconds: 10000 });
-			// If it finished before 10s, we have all logs in `buffer`
-		} catch (err) {
-			// The command is still running after 10s, so partial logs:
-			console.warn('Command is still running. Partial logs so far:', buffer);
-			// We do *not* call process.continue(), so it remains active!
+		if (!wait_for_exit) {
+			// Return immediately for long-running processes
+			return buffer;
 		}
 
-
+		// Wait for process completion and return output for regular commands
+		await process;
 		return buffer;
 	} finally {
-		// do not dispose it as we want to keep it running
-		// terminalManager.disposeAll();
+		// Only dispose if we're waiting for exit
+		if (wait_for_exit) {
+			terminalManager.disposeAll();
+		}
 	}
 }
 
