@@ -266,7 +266,8 @@ export class WorkbenchContextKeysHandler extends Disposable {
 	}
 
 	private updateVisiblePreviewContextKeys() {
-		this.previewVisibleContext.set(this.layoutService.isVisible(OverlayedParts.PREVIEW_PART));
+		const isVisible = this.layoutService.isVisible(OverlayedParts.PREVIEW_PART);
+		this.previewVisibleContext.set(isVisible);
 	}
 
 	private updateVisiblePanesContextKeys(): void {

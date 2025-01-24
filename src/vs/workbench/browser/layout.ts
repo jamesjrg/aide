@@ -1660,6 +1660,7 @@ export abstract class Layout extends Disposable implements IWorkbenchLayoutServi
 					editorParentElement.prepend(this.previewPartView.element);
 				}
 				this.arrangePreviewOverlay();
+				this.setPreviewHidden(true);
 				this._register(this.editorPartView.onDidContentSizeChange(() => {
 					this.arrangePreviewOverlay();
 				}));
