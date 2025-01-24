@@ -204,7 +204,12 @@ export class ReactDevtoolsManager extends vscode.Disposable {
 		super(() => this._disposeSessions());
 	}
 
-	private sessions = new Map<number, DevtoolsSession>;
+	private _sessions = new Map<number, DevtoolsSession>;
+
+	get sessions(): ReadonlyMap<number, DevtoolsSession> {
+		return this.sessions;
+	}
+
 	private activeSession: DevtoolsSession | undefined;
 	private activeSessionDisposables: vscode.Disposable[] = [];
 
@@ -221,12 +226,12 @@ export class ReactDevtoolsManager extends vscode.Disposable {
 		return new Promise((resolve, reject) => {
 			let session: DevtoolsSession;
 
-			if (this.sessions.has(port)) {
-				session = this.sessions.get(port)!;
+			if (this._sessions.has(port)) {
+				session = this._sessions.get(port)!;
 			} else {
 				let suggestedDevtoolsPort: number | undefined;
 				const activeSessionPorts = new Set<number>();
-				for (const session of this.sessions.values()) {
+				for (const session of this._sessions.values()) {
 					if (session.devtoolsPort) {
 						activeSessionPorts.add(session.devtoolsPort);
 					}
@@ -235,7 +240,7 @@ export class ReactDevtoolsManager extends vscode.Disposable {
 					suggestedDevtoolsPort = Math.max(...activeSessionPorts) + 1;
 				}
 				session = new DevtoolsSession(port, suggestedDevtoolsPort);
-				this.sessions.set(port, session);
+				this._sessions.set(port, session);
 			}
 
 			if (this.activeSession !== session) {
@@ -300,7 +305,7 @@ export class ReactDevtoolsManager extends vscode.Disposable {
 	}
 
 	private _disposeSessions() {
-		for (const session of this.sessions.values()) {
+		for (const session of this._sessions.values()) {
 			session.dispose();
 		}
 		this.clearSessionDisposables();

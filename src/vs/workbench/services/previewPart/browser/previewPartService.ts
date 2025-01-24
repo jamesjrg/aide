@@ -17,5 +17,6 @@ export interface IPreviewPartService {
 	readonly mainPart: PreviewEditorPart;
 	getPart(container: HTMLElement): IDisposable; // @g-danna Should be getOverlayedPart ?
 	getOrCreateEditorGroupPart(editorPartsView: IEditorPartsView, state?: IEditorPartUIState): ICreatePreviewEditorPartResult;
+	getBoundingClientRect(): DOMRect;
 	// createAuxiliaryPreviewPart(container: HTMLElement, editorsContainer: HTMLElement): PreviewPart;
 }

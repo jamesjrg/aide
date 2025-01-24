@@ -30,4 +30,8 @@ export class PreviewPartService extends MultiWindowParts<PreviewEditorPart> impl
 	getOrCreateEditorGroupPart(editorPartsView: IEditorPartsView, state?: IEditorPartUIState) {
 		return this.mainPart.getOrCreateEditorPart(editorPartsView, state);
 	}
+
+	getBoundingClientRect() {
+		return this.mainPart.element.getBoundingClientRect();
+	}
 }

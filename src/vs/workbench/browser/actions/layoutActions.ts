@@ -7,7 +7,7 @@ import { ILocalizedString, localize, localize2 } from '../../../nls.js';
 import { MenuId, MenuRegistry, registerAction2, Action2 } from '../../../platform/actions/common/actions.js';
 import { Categories } from '../../../platform/action/common/actionCommonCategories.js';
 import { IConfigurationService } from '../../../platform/configuration/common/configuration.js';
-import { EditorActionsLocation, EditorTabsMode, IWorkbenchLayoutService, LayoutSettings, OverlayedParts, Parts, Position, ZenModeSettings, positionToString } from '../../services/layout/browser/layoutService.js';
+import { EditorActionsLocation, EditorTabsMode, IWorkbenchLayoutService, LayoutSettings, Parts, Position, ZenModeSettings, positionToString } from '../../services/layout/browser/layoutService.js';
 import { ServicesAccessor, IInstantiationService } from '../../../platform/instantiation/common/instantiation.js';
 import { KeyMod, KeyCode, KeyChord } from '../../../base/common/keyCodes.js';
 import { isWindows, isLinux, isWeb, isMacintosh, isNative } from '../../../base/common/platform.js';
@@ -22,7 +22,7 @@ import { IPaneCompositePartService } from '../../services/panecomposite/browser/
 import { ToggleAuxiliaryBarAction } from '../parts/auxiliarybar/auxiliaryBarActions.js';
 import { TogglePanelAction } from '../parts/panel/panelActions.js';
 import { ICommandService } from '../../../platform/commands/common/commands.js';
-import { AuxiliaryBarVisibleContext, PanelAlignmentContext, PanelVisibleContext, SideBarVisibleContext, FocusedViewContext, InEditorZenModeContext, IsMainEditorCenteredLayoutContext, MainEditorAreaVisibleContext, IsMainWindowFullscreenContext, PanelPositionContext, IsAuxiliaryWindowFocusedContext, TitleBarStyleContext, PreviewVisibleContext } from '../../common/contextkeys.js';
+import { AuxiliaryBarVisibleContext, PanelAlignmentContext, PanelVisibleContext, SideBarVisibleContext, FocusedViewContext, InEditorZenModeContext, IsMainEditorCenteredLayoutContext, MainEditorAreaVisibleContext, IsMainWindowFullscreenContext, PanelPositionContext, IsAuxiliaryWindowFocusedContext, TitleBarStyleContext } from '../../common/contextkeys.js';
 import { Codicon } from '../../../base/common/codicons.js';
 import { ThemeIcon } from '../../../base/common/themables.js';
 import { DisposableStore } from '../../../base/common/lifecycle.js';
@@ -266,87 +266,6 @@ MenuRegistry.appendMenuItem(MenuId.MenubarViewMenu, {
 	submenu: MenuId.MenubarAppearanceMenu,
 	order: 1
 });
-
-// Toggle Preview visibility
-
-
-export class ShowPreviewAction extends Action2 {
-
-	static readonly ID = 'workbench.action.showPreview';
-	static readonly LABEL = localize('togglePreview', "Toggle web app preview");
-
-	static getLabel(layoutService: IWorkbenchLayoutService): string {
-		return layoutService.getSideBarPosition() === Position.LEFT ? localize('moveSidebarRight', "Move Primary Side Bar Right") : localize('moveSidebarLeft', "Move Primary Side Bar Left");
-	}
-
-	constructor() {
-		super({
-			id: ShowPreviewAction.ID,
-			title: localize2('showPreview', "Show web app preview"),
-			category: Categories.View,
-			f1: true,
-			icon: Codicon.browser,
-			// menu: [{
-			// 	id: MenuId.PreviewMenu,
-			// 	group: 'navigation',
-			// }]
-		});
-	}
-
-	run(accessor: ServicesAccessor): void {
-		const layoutService = accessor.get(IWorkbenchLayoutService);
-		const isPreviewVisible = layoutService.isVisible(OverlayedParts.PREVIEW_PART);
-		if (!isPreviewVisible) {
-			layoutService.setPartHidden(false, OverlayedParts.PREVIEW_PART);
-		}
-	}
-}
-
-registerAction2(ShowPreviewAction);
-
-export class TogglePreviewAction extends Action2 {
-
-	static readonly ID = 'workbench.action.togglePreview';
-	static readonly LABEL = localize('togglePreview', "Toggle web app preview");
-
-	static getLabel(layoutService: IWorkbenchLayoutService): string {
-		return layoutService.getSideBarPosition() === Position.LEFT ? localize('moveSidebarRight', "Move Primary Side Bar Right") : localize('moveSidebarLeft', "Move Primary Side Bar Left");
-	}
-
-	constructor() {
-		super({
-			id: TogglePreviewAction.ID,
-			title: localize2('togglePreview', "Toggle web app preview"),
-			category: Categories.View,
-			f1: true,
-			icon: Codicon.browser,
-			// menu: [{
-			// 	id: MenuId.PreviewMenu,
-			// 	group: 'navigation',
-			// }]
-		});
-	}
-
-	run(accessor: ServicesAccessor): void {
-		const layoutService = accessor.get(IWorkbenchLayoutService);
-		const isPreviewVisible = layoutService.isVisible(OverlayedParts.PREVIEW_PART);
-		layoutService.setPartHidden(isPreviewVisible, OverlayedParts.PREVIEW_PART);
-	}
-}
-
-registerAction2(TogglePreviewAction);
-
-
-MenuRegistry.appendMenuItem(MenuId.PreviewMenu, {
-	group: 'navigation',
-	command: {
-		id: TogglePreviewAction.ID,
-		title: localize2('togglePreview.show', "Show web app preview"),
-		icon: Codicon.code,
-		toggled: { condition: ContextKeyExpr.equals(PreviewVisibleContext.key, true), icon: Codicon.browser, title: localize2('togglePreview.show', "Show web app preview").value }
-	},
-});
-
 
 
 // Toggle Sidebar Visibility
