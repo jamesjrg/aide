@@ -537,7 +537,7 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 				}
 
 				if ('session_id' in event && 'started' in event) {
-					if (event.started = false) {
+					if (!event.started) {
 						streamStarted = false;
 						throw new SidecarConnectionFailedError();
 					}
@@ -547,6 +547,19 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 
 				if ('done' in event) {
 					continue;
+				}
+
+				if (event.event.Error) {
+					latestResponseStream?.stream.toolTypeError({
+						message: `${event.event.Error.message}.\n\nWe\'d appreciate it if you could report this session using the feedback tool above - this is on us. Please try again.`
+					});
+					latestResponseStream?.stream.stage({ message: 'Error' });
+					errorCallback?.();
+					const openStreams = this.responseStreamCollection.getAllResponseStreams();
+					for (const stream of openStreams) {
+						this.closeAndRemoveResponseStream(event.request_id, stream.exchangeId);
+					}
+					return;
 				}
 
 				const sessionId = event.request_id;

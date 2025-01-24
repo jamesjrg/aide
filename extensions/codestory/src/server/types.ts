@@ -382,6 +382,11 @@ interface UIEvent {
 	ChatEvent: ChatMessageEvent;
 	ExchangeEvent: ExchangeMessageEvent;
 	PlanEvent: PlanMessageEvent;
+	Error: ErrorEvent;
+}
+
+interface ErrorEvent {
+	message: string;
 }
 
 interface TerminalCommandEvent {
