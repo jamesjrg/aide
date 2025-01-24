@@ -260,8 +260,9 @@ export async function activate(context: vscode.ExtensionContext) {
 
 	// Contains bindings to react devtools headless frontend
 	const reactDevtoolsManager = new ReactDevtoolsManager();
+	context.subscriptions.push(reactDevtoolsManager);
 
-	reactDevtoolsManager.onStatusChange((status) => {
+	reactDevtoolsManager.onActiveSessionStatusChange((status) => {
 		vscode.devtools.setStatus(status);
 		if (status === 'devtools-connected') {
 			postHogClient?.capture({
@@ -277,11 +278,11 @@ export async function activate(context: vscode.ExtensionContext) {
 		}
 	});
 
-	reactDevtoolsManager.onInspectHostChange((isInspecting) => {
+	reactDevtoolsManager.onActiveSessionInspectHostChange((isInspecting) => {
 		vscode.devtools.setIsInspectingHost(isInspecting);
 	});
 
-	reactDevtoolsManager.onInspectedElementChange((payload) => {
+	reactDevtoolsManager.onActiveSessionInspectedElementChange((payload) => {
 		vscode.devtools.setLatestPayload(payload);
 	});
 
@@ -291,54 +292,26 @@ export async function activate(context: vscode.ExtensionContext) {
 
 	vscode.devtools.onDidTriggerInspectingHostStop(() => {
 		reactDevtoolsManager.stopInspectingHost();
-		const { inspectedElement } = reactDevtoolsManager;
-		if (inspectedElement) {
-			try {
-				postHogClient?.capture({
-					distinctId: getUniqueId(),
-					event: 'devtools.inspectedElement',
-					properties: {
-						product: 'aide',
-						inspectedElement: JSON.stringify(inspectedElement),
-						email,
-						repoName,
-						repoHash,
-					}
-				});
-			} catch (err) {
-				if (context.extensionMode === vscode.ExtensionMode.Development) {
-					console.error(err);
-				}
-			}
-		}
 	});
 
 
 	async function openUrl(url: string) {
 		try {
 			const parsedUrl = new URL(url);
-			if (
-				reactDevtoolsManager.status === 'server-connected'
-				|| reactDevtoolsManager.status === 'devtools-connected'
-			) {
-				const proxyedPort = await reactDevtoolsManager.proxy(Number(parsedUrl.port));
-				const proxyedUrl = new URL(parsedUrl);
-				proxyedUrl.port = proxyedPort.toString();
-				simpleBrowserManager.show(proxyedUrl.href, { originalUrl: url, inPreview: true });
-				vscode.commands.executeCommand('workbench.action.showPreview');
-			} else {
-				console.error('Devtools are not ready');
-			}
+			const proxyedPort = await reactDevtoolsManager.startOrGetSession(Number(parsedUrl.port));
+			const proxyedUrl = new URL(parsedUrl);
+			proxyedUrl.port = proxyedPort.toString();
+			simpleBrowserManager.show(proxyedUrl.href, { originalUrl: url, inPreview: true });
+			vscode.commands.executeCommand('workbench.action.showPreview');
 		} catch (err) {
 			vscode.window.showErrorMessage('The URL you provided is not valid');
 		}
 	}
 
 	const simpleBrowserManager = new SimpleBrowserManager(context.extensionUri);
+	context.subscriptions.push(simpleBrowserManager);
 
 	context.subscriptions.push(simpleBrowserManager.onUrlChange(async ({ originalUrl, url }) => {
-		// avoid race condition on disconnect callback
-		await Promise.resolve(reactDevtoolsManager.disconnectedPromise?.promise);
 		const parsedOriginal = new URL(originalUrl || url);
 		const parsed = new URL(url);
 		parsedOriginal.pathname = parsed.pathname;
@@ -367,6 +340,7 @@ export async function activate(context: vscode.ExtensionContext) {
 			openUrl(url);
 		}
 	}));
+
 }
 
 export async function deactivate() {

@@ -5,13 +5,42 @@
 
 import * as vscode from 'vscode';
 // @ts-expect-error external
-import Devtools from './dist/standalone.js';
-import { proxy } from './proxy';
-import { DevtoolsStatus, InspectedElementPayload, InspectElementParsedFullData } from './types';
+import createDevtools from './dist/standalone.js';
+import { proxy, ProxyResult } from './proxy';
+import { DevtoolsStatus, DevtoolsType, InspectedElementPayload, InspectElementParsedFullData } from './types';
 import { findTsxNodeAtLine } from '../../languages/tsxCodeSymbols.js';
 import { join } from 'node:path';
 
-export class ReactDevtoolsManager {
+export class DevtoolsSession extends vscode.Disposable {
+
+	private devtools: DevtoolsType;
+	private _port: number;
+	private _proxyResult: ProxyResult | undefined;
+
+	get port() {
+		return this._port;
+	}
+
+	get proxyPort() {
+		return this._proxyResult?.listenPort;
+	}
+
+	constructor(port: number) {
+		super(() => {
+			this._cleanupProxy();
+			this.devtools.stopServer();
+		});
+
+		this._port = port;
+
+		this.devtools = createDevtools()
+			.setStatusListener(this.updateStatus.bind(this))
+			.setDataCallback(this.updateInspectedElement.bind(this))
+			.setDisconnectedCallback(this.onDidDisconnect.bind(this))
+			.setInspectionCallback(this.updateInspectHost.bind(this))
+			.startServer(8097, 'localhost');
+	}
+
 	private _onStatusChange = new vscode.EventEmitter<DevtoolsStatus>();
 	onStatusChange = this._onStatusChange.event;
 
@@ -21,44 +50,33 @@ export class ReactDevtoolsManager {
 	private _onInspectHostChange = new vscode.EventEmitter<boolean>();
 	onInspectHostChange = this._onInspectHostChange.event;
 
+	private _waitForDisconnection: DeferredPromise | null = null;
+	// get waitForDisconnection() {
+	// 	return this._waitForDisconnection;
+	// }
+
+	private _cleanupProxy() {
+		if (this._waitForDisconnection) {
+			this._waitForDisconnection.resolve();
+		}
+		this._proxyResult?.cleanup();
+	}
+
 	private _status: DevtoolsStatus = DevtoolsStatus.Idle;
 	get status() {
 		return this._status;
 	}
 
-	private _insepectedElement: InspectedElementPayload | null = null;
+	private _inspectedElement: InspectedElementPayload | null = null;
 	get inspectedElement() {
-		return this._insepectedElement;
+		return this._inspectedElement;
 	}
 
-	private _proxyListenPort: number | undefined;
-
-	get proxyListenPort() {
-		return this._proxyListenPort;
-	}
-
-
-	private _disconnectedPromise: DeferredPromise | null = null;
-	get disconnectedPromise() {
-		return this._disconnectedPromise;
-	}
-
-	private _cleanupProxy: (() => void) | undefined;
-	private _Devtools: Devtools;
-
-	constructor() {
-		this._Devtools = Devtools
-			.setStatusListener(this.updateStatus.bind(this))
-			.setDataCallback(this.updateInspectedElement.bind(this))
-			.setDisconnectedCallback(this.onDidDisconnect.bind(this))
-			.setInspectionCallback(this.updateInspectHost.bind(this))
-			.startServer(8097, 'localhost');
-	}
-
-	private updateStatus(_message: string, status: DevtoolsStatus) {
+	private async updateStatus(_message: string, status: DevtoolsStatus) {
 		this._status = status;
 		if (status === DevtoolsStatus.ServerConnected) {
-			this._disconnectedPromise = new DeferredPromise();
+			this._waitForDisconnection = new DeferredPromise();
+			await this._startProxy();
 		}
 		this._onStatusChange.fire(status);
 	}
@@ -67,25 +85,16 @@ export class ReactDevtoolsManager {
 		this._onInspectHostChange.fire(isInspecting);
 	}
 
-	cleanupProxy() {
-		if (!this._disconnectedPromise) {
-			this._disconnectedPromise = new DeferredPromise();
-		}
-		this._disconnectedPromise.resolve();
-		this._cleanupProxy?.();
-		this._cleanupProxy = undefined;
-		this._proxyListenPort = undefined;
-	}
-
 	private onDidDisconnect() {
 		if (this._status === DevtoolsStatus.DevtoolsConnected) {
+			this._cleanupProxy();
 			// @g-danna take a look at this again
 			this.updateStatus('Devtools disconnected', DevtoolsStatus.ServerConnected);
 		}
 	}
 
 	private async updateInspectedElement(payload: InspectedElementPayload) {
-		this._insepectedElement = payload;
+		this._inspectedElement = payload;
 		if (payload.type === 'full-data') {
 			const reference = await this.getValidReference(payload);
 			this._onInspectedElementChange.fire(reference);
@@ -158,29 +167,131 @@ export class ReactDevtoolsManager {
 	}
 
 
-
-	async proxy(port: number) {
-		if (this._proxyListenPort) {
-			this.cleanupProxy();
+	async _startProxy() {
+		if (!this.devtools.currentPort) {
+			throw new Error('Devtools server is not connected, cannot start proxy');
 		}
-		if (this.status !== 'server-connected') {
-			throw new Error('Devtools server is not connected, cannot initialize proxy');
-		}
-		const { listenPort, cleanup } = await proxy(port, this._Devtools.currentPort);
-		this._proxyListenPort = listenPort;
-		this._cleanupProxy = cleanup;
-		return this._proxyListenPort;
+		this._proxyResult = await proxy(this._port, this.devtools.currentPort);
+		return;
 	}
 
 	startInspectingHost() {
 		// Have to call this manually because React devtools don't call this
 		this._onInspectHostChange.fire(true);
-		this._Devtools.startInspectingHost();
+		this.devtools.startInspectingHost();
 	}
 
 	stopInspectingHost() {
-		this._Devtools.stopInspectingHost();
+		this.devtools.stopInspectingHost();
 	}
+
+	override dispose() {
+		super.dispose();
+		this._cleanupProxy();
+		this.devtools.stopServer();
+	}
+
+}
+
+
+export class ReactDevtoolsManager extends vscode.Disposable {
+
+	constructor() {
+		super(() => this._disposeSessions());
+	}
+
+	private sessions = new Map<number, DevtoolsSession>;
+	private activeSession: DevtoolsSession | undefined;
+	private activeSessionDisposables: vscode.Disposable[] = [];
+
+	private _onActiveSessionStatusChange = new vscode.EventEmitter<DevtoolsStatus>();
+	onActiveSessionStatusChange = this._onActiveSessionStatusChange.event;
+
+	private _onActiveSessionInspectedElementChange = new vscode.EventEmitter<vscode.Location | null>();
+	onActiveSessionInspectedElementChange = this._onActiveSessionInspectedElementChange.event;
+
+	private _onActiveSessionInspectHostChange = new vscode.EventEmitter<boolean>();
+	onActiveSessionInspectHostChange = this._onActiveSessionInspectHostChange.event;
+
+	async startOrGetSession(port: number): Promise<number> {
+		return new Promise((resolve, reject) => {
+			let session: DevtoolsSession;
+
+			if (this.sessions.has(port)) {
+				session = this.sessions.get(port)!;
+			} else {
+				session = new DevtoolsSession(port);
+				this.sessions.set(port, session);
+			}
+
+			if (this.activeSession !== session) {
+
+				this.clearSessionDisposables();
+
+				this.activeSessionDisposables.push(
+					session.onStatusChange(status => {
+						this._onActiveSessionStatusChange.fire(status);
+					}),
+					session.onInspectedElementChange(location => {
+						this._onActiveSessionInspectedElementChange.fire(location);
+					}),
+					session.onInspectHostChange(isInspecting => {
+						this._onActiveSessionInspectHostChange.fire(isInspecting);
+					})
+				);
+
+				this.activeSession = session;
+			}
+
+			if (session.status === DevtoolsStatus.ServerConnected && session.proxyPort) {
+				return resolve(session.proxyPort);
+			}
+
+			const statusListener = session.onStatusChange(status => {
+				if (status === DevtoolsStatus.ServerConnected && session.proxyPort) {
+					statusListener.dispose();
+					resolve(session.proxyPort);
+				} else if (status === DevtoolsStatus.Error) {
+					reject('Error while starting a new session');
+				}
+			});
+		});
+	}
+
+	private _activeInspectedElement: InspectedElementPayload | null = null;
+	get activeInspectedElement() {
+		return this._activeInspectedElement;
+	}
+
+	startInspectingHost() {
+		if (!this.activeSession) {
+			console.error('Cannot start inspecting host: no active session');
+			return;
+		}
+		this.activeSession.startInspectingHost();
+	}
+
+	stopInspectingHost() {
+		if (!this.activeSession) {
+			console.error('Cannot stop inspecting host: no active session');
+			return;
+		}
+		this.activeSession.stopInspectingHost();
+	}
+
+	private clearSessionDisposables() {
+		// Clean up old listeners
+		this.activeSessionDisposables.forEach(d => d.dispose());
+		this.activeSessionDisposables = [];
+	}
+
+	private _disposeSessions() {
+		for (const session of this.sessions.values()) {
+			session.dispose();
+		}
+		this.clearSessionDisposables();
+	}
+
 }
 
 

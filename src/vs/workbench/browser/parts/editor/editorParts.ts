@@ -121,15 +121,22 @@ export class EditorParts extends MultiWindowParts<EditorPart> implements IEditor
 
 	//#region Preview Editor Parts
 
+	private didInitializePreviewEditor = false; // @g-danna will improve on this.
+
 	getOrCreatePreviewEditorPart(options?: IPreviewEditorPartOpenOptions): IPreviewEditorPart {
+
 		const { part, instantiationService, disposables } = this.previewPartService.getOrCreateEditorGroupPart(this, undefined);
 
-		// Keep instantiation service
-		this.mapPartToInstantiationService.set(part.windowId, instantiationService);
-		disposables.add(toDisposable(() => this.mapPartToInstantiationService.delete(part.windowId)));
+		if (!this.didInitializePreviewEditor) {
+			// Keep instantiation service
+			this.mapPartToInstantiationService.set(part.windowId, instantiationService);
+			disposables.add(toDisposable(() => this.mapPartToInstantiationService.delete(part.windowId)));
 
-		// Events
-		this._onDidAddGroup.fire(part.activeGroup);
+			// Events
+			this._onDidAddGroup.fire(part.activeGroup);
+			this._register(this.registerPart(part));
+			this.didInitializePreviewEditor = true;
+		}
 		return part;
 	}
 

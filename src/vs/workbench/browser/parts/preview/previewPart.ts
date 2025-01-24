@@ -16,6 +16,8 @@ import { IHostService } from '../../../services/host/browser/host.js';
 import { IEditorGroupView, IEditorPartsView } from '../editor/editor.js';
 import { EditorPart, IEditorPartUIState } from '../editor/editorPart.js';
 import { getWindow } from '../../../../base/browser/dom.js';
+import { IEditorPartOptions } from '../../../common/editor.js';
+import './media/previewPart.css';
 
 
 export interface IPreviewEditorPartOpenOptions {
@@ -184,6 +186,13 @@ class PreviewEditorPartImpl extends EditorPart {
 			hostService,
 			contextKeyService
 		);
+	}
+
+	override get partOptions(): IEditorPartOptions {
+
+		const options = { ...super.partOptions };
+		options.showTabs = 'none'; // tab bar is hidden
+		return options;
 	}
 
 	// If you want custom logic when removing the last group,

@@ -11,18 +11,25 @@ type WebViewState = {
 	originalUrl: string;
 };
 
-export class SimpleBrowserManager {
+export class SimpleBrowserManager extends vscode.Disposable {
 
 	private _activeView?: SimpleBrowserView;
+
+	constructor(
+		private readonly extensionUri: vscode.Uri,
+	) {
+		super(() => {
+			if (this._activeView) {
+				this.disposeViews();
+			}
+		});
+	}
 
 	private _onUrlChange = new vscode.EventEmitter<UrlChangePayload>();
 	onUrlChange = this._onUrlChange.event;
 
-	constructor(
-		private readonly extensionUri: vscode.Uri,
-	) { }
 
-	dispose() {
+	disposeViews() {
 		this._activeView?.dispose();
 		this._activeView = undefined;
 	}
@@ -53,6 +60,11 @@ export class SimpleBrowserManager {
 				this._activeView = undefined;
 			}
 		});
+	}
+
+	override dispose() {
+		super.dispose();
+		this.disposeViews();
 	}
 
 }

@@ -178,7 +178,7 @@ function startInterceptingDocument(
 	});
 }
 
-type ProxyResult = {
+export type ProxyResult = {
 	listenPort: number;
 	cleanup: () => void;
 };

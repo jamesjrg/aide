@@ -11,6 +11,56 @@ export enum DevtoolsStatus {
 }
 
 
+export type StatusListener = (message: string, status?: DevtoolsStatus) => void;
+
+/**
+ * Called when the DevTools backend disconnects.
+ */
+export type OnDisconnectedCallback = () => void;
+
+/**
+ * Called when data about an inspected element is received.
+ */
+export type OnDataCallback = (data: InspectedElementPayload) => void;
+
+/**
+ * Called when inspection mode (e.g. "pick an element on the screen") starts or stops.
+ */
+export type OnInspectionCallback = (isInspecting: boolean) => void;
+
+
+export interface ServerOptions {
+	key?: string;
+	cert?: string;
+}
+
+export interface LoggerOptions {
+	surface?: string | null;
+}
+
+
+export interface DevtoolsType {
+	currentPort: number | null;
+
+	setStatusListener(value: StatusListener): DevtoolsType;
+	setDisconnectedCallback(value: OnDisconnectedCallback): DevtoolsType;
+	setDataCallback(value: OnDataCallback): DevtoolsType;
+	setInspectionCallback(value: OnInspectionCallback): DevtoolsType;
+
+	startInspectingHost(): DevtoolsType;
+	stopInspectingHost(): DevtoolsType;
+
+	startServer(
+		port: number,
+		host: string,
+		httpsOptions?: ServerOptions,
+		loggerOptions?: LoggerOptions
+	): DevtoolsType;
+
+	stopServer(): DevtoolsType;
+}
+
+
 export type InspectedElementPayload =
 	| InspectElementError
 	| InspectElementParsedFullData
