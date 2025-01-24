@@ -13,7 +13,7 @@ import { join } from 'node:path';
 
 export class DevtoolsSession extends vscode.Disposable {
 
-	private devtools: DevtoolsType;
+	private _devtools: DevtoolsType;
 	private _port: number;
 	private _proxyResult: ProxyResult | undefined;
 
@@ -25,20 +25,24 @@ export class DevtoolsSession extends vscode.Disposable {
 		return this._proxyResult?.listenPort;
 	}
 
-	constructor(port: number) {
+	get devtoolsPort() {
+		return this._devtools.currentPort;
+	}
+
+	constructor(port: number, suggestedDevtoolsPort = 8097) {
 		super(() => {
 			this._cleanupProxy();
-			this.devtools.stopServer();
+			this._devtools.stopServer();
 		});
 
 		this._port = port;
 
-		this.devtools = createDevtools()
+		this._devtools = createDevtools()
 			.setStatusListener(this.updateStatus.bind(this))
 			.setDataCallback(this.updateInspectedElement.bind(this))
 			.setDisconnectedCallback(this.onDidDisconnect.bind(this))
 			.setInspectionCallback(this.updateInspectHost.bind(this))
-			.startServer(8097, 'localhost');
+			.startServer(suggestedDevtoolsPort, 'localhost');
 	}
 
 	private _onStatusChange = new vscode.EventEmitter<DevtoolsStatus>();
@@ -168,27 +172,27 @@ export class DevtoolsSession extends vscode.Disposable {
 
 
 	async _startProxy() {
-		if (!this.devtools.currentPort) {
+		if (!this._devtools.currentPort) {
 			throw new Error('Devtools server is not connected, cannot start proxy');
 		}
-		this._proxyResult = await proxy(this._port, this.devtools.currentPort);
+		this._proxyResult = await proxy(this._port, this._devtools.currentPort);
 		return;
 	}
 
 	startInspectingHost() {
 		// Have to call this manually because React devtools don't call this
 		this._onInspectHostChange.fire(true);
-		this.devtools.startInspectingHost();
+		this._devtools.startInspectingHost();
 	}
 
 	stopInspectingHost() {
-		this.devtools.stopInspectingHost();
+		this._devtools.stopInspectingHost();
 	}
 
 	override dispose() {
 		super.dispose();
 		this._cleanupProxy();
-		this.devtools.stopServer();
+		this._devtools.stopServer();
 	}
 
 }
@@ -220,7 +224,17 @@ export class ReactDevtoolsManager extends vscode.Disposable {
 			if (this.sessions.has(port)) {
 				session = this.sessions.get(port)!;
 			} else {
-				session = new DevtoolsSession(port);
+				let suggestedDevtoolsPort: number | undefined;
+				const activeSessionPorts = new Set<number>();
+				for (const session of this.sessions.values()) {
+					if (session.devtoolsPort) {
+						activeSessionPorts.add(session.devtoolsPort);
+					}
+				}
+				if (activeSessionPorts.size > 0) {
+					suggestedDevtoolsPort = Math.max(...activeSessionPorts) + 1;
+				}
+				session = new DevtoolsSession(port, suggestedDevtoolsPort);
 				this.sessions.set(port, session);
 			}
 
