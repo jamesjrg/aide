@@ -1052,63 +1052,72 @@ export class SideCarClient {
 		codebaseSearch: boolean,
 		workosAccessToken: string,
 	): AsyncIterableIterator<SideCarAgentEvent> {
-		if (agentMode !== vscode.AideAgentMode.Agentic && agentMode !== vscode.AideAgentMode.Plan) {
-			throw new Error('Invalid agent mode');
-		}
-
-		const baseUrl = new URL(this._url);
-		const sideCarModelConfiguration = await getSideCarModelConfiguration(await vscode.modelSelection.getConfiguration(), workosAccessToken);
-		const allFiles = vscode.workspace.textDocuments.filter((textDocument) => {
-			return textDocument.uri.scheme === 'file';
-		}).map((textDocument) => {
-			return textDocument.uri.fsPath;
-		});
-		// log here for debugging
-		const openFiles = vscode.window.visibleTextEditors.filter((textDocument) => {
-			return textDocument.document.uri.scheme === 'file';
-		}).map((textDocument) => {
-			return textDocument.document.uri.fsPath;
-		});
-		const currentShell = detectDefaultShell();
-		if (agentMode === vscode.AideAgentMode.Agentic) {
-			baseUrl.pathname = '/api/agentic/agent_tool_use';
-		} else {
-			baseUrl.pathname = '/api/agentic/agent_session_plan';
-		}
-		const sidecarAgentUsesReasoning = sidecarUsesAgentReasoning();
-		const aideRulesContent = await readAideRulesContent();
-		const url = baseUrl.toString();
-		const body = {
-			session_id: sessionId,
-			exchange_id: exchangeId,
-			editor_url: editorUrl,
-			query,
-			user_context: await convertVSCodeVariableToSidecarHackingForPlan(variables, query),
-			agent_mode: agentMode.toString(),
-			repo_ref: repoRef.getRepresentation(),
-			root_directory: vscode.workspace.rootPath ?? '',
-			project_labels: projectLabels,
-			codebase_search: codebaseSearch,
-			access_token: workosAccessToken,
-			model_configuration: sideCarModelConfiguration,
-			all_files: allFiles,
-			open_files: openFiles,
-			shell: currentShell,
-			aide_rules: aideRulesContent,
-			reasoning: sidecarAgentUsesReasoning,
-		};
-
-		const asyncIterableResponse = callServerEventStreamingBufferedPOST(url, body);
-		for await (const line of asyncIterableResponse) {
-			const lineParts = line.split('data:{');
-			for (const lineSinglePart of lineParts) {
-				const lineSinglePartTrimmed = lineSinglePart.trim();
-				if (lineSinglePartTrimmed === '') {
-					continue;
-				}
-				const conversationMessage = JSON.parse('{' + lineSinglePartTrimmed) as SideCarAgentEvent;
-				yield conversationMessage;
+		try {
+			if (agentMode !== vscode.AideAgentMode.Agentic && agentMode !== vscode.AideAgentMode.Plan) {
+				throw new Error('Invalid agent mode');
 			}
+
+			const baseUrl = new URL(this._url);
+			const sideCarModelConfiguration = await getSideCarModelConfiguration(await vscode.modelSelection.getConfiguration(), workosAccessToken);
+			const allFiles = vscode.workspace.textDocuments.filter((textDocument) => {
+				return textDocument.uri.scheme === 'file';
+			}).map((textDocument) => {
+				return textDocument.uri.fsPath;
+			});
+			// log here for debugging
+			const openFiles = vscode.window.visibleTextEditors.filter((textDocument) => {
+				return textDocument.document.uri.scheme === 'file';
+			}).map((textDocument) => {
+				return textDocument.document.uri.fsPath;
+			});
+			const currentShell = detectDefaultShell();
+			if (agentMode === vscode.AideAgentMode.Agentic) {
+				baseUrl.pathname = '/api/agentic/agent_tool_use';
+			} else {
+				baseUrl.pathname = '/api/agentic/agent_session_plan';
+			}
+			const sidecarAgentUsesReasoning = sidecarUsesAgentReasoning();
+			const aideRulesContent = await readAideRulesContent();
+			const url = baseUrl.toString();
+			const body = {
+				session_id: sessionId,
+				exchange_id: exchangeId,
+				editor_url: editorUrl,
+				query,
+				user_context: await convertVSCodeVariableToSidecarHackingForPlan(variables, query),
+				agent_mode: agentMode.toString(),
+				repo_ref: repoRef.getRepresentation(),
+				root_directory: vscode.workspace.rootPath ?? '',
+				project_labels: projectLabels,
+				codebase_search: codebaseSearch,
+				access_token: workosAccessToken,
+				model_configuration: sideCarModelConfiguration,
+				all_files: allFiles,
+				open_files: openFiles,
+				shell: currentShell,
+				aide_rules: aideRulesContent,
+				reasoning: sidecarAgentUsesReasoning,
+			};
+
+			const asyncIterableResponse = callServerEventStreamingBufferedPOST(url, body);
+			for await (const line of asyncIterableResponse) {
+				const lineParts = line.split('data:{');
+				for (const lineSinglePart of lineParts) {
+					const lineSinglePartTrimmed = lineSinglePart.trim();
+					if (lineSinglePartTrimmed === '') {
+						continue;
+					}
+					const conversationMessage = JSON.parse('{' + lineSinglePartTrimmed) as SideCarAgentEvent;
+					yield conversationMessage;
+				}
+			}
+		} catch (error) {
+			// Yield error event before throwing
+			yield {
+				session_id: sessionId,
+				started: false,
+			};
+			throw error; // Re-throw to be caught by caller
 		}
 	}
 
@@ -1169,27 +1178,36 @@ export class SideCarClient {
 		editorUrl: string,
 		accessToken: string,
 	): AsyncIterableIterator<SideCarAgentEvent> {
-		const baseUrl = new URL(this._url);
-		baseUrl.pathname = '/api/agentic/cancel_running_event';
-		const url = baseUrl.toString();
-		const body = {
-			session_id: sessionId,
-			exchange_id: exchangeId,
-			editor_url: editorUrl,
-			access_token: accessToken,
-			model_configuration: await getSideCarModelConfiguration(await vscode.modelSelection.getConfiguration(), accessToken),
-		};
-		const asyncIterableResponse = callServerEventStreamingBufferedPOST(url, body);
-		for await (const line of asyncIterableResponse) {
-			const lineParts = line.split('data:{');
-			for (const lineSinglePart of lineParts) {
-				const lineSinglePartTrimmed = lineSinglePart.trim();
-				if (lineSinglePartTrimmed === '') {
-					continue;
+		try {
+			const baseUrl = new URL(this._url);
+			baseUrl.pathname = '/api/agentic/cancel_running_event';
+			const url = baseUrl.toString();
+			const body = {
+				session_id: sessionId,
+				exchange_id: exchangeId,
+				editor_url: editorUrl,
+				access_token: accessToken,
+				model_configuration: await getSideCarModelConfiguration(await vscode.modelSelection.getConfiguration(), accessToken),
+			};
+			const asyncIterableResponse = callServerEventStreamingBufferedPOST(url, body);
+			for await (const line of asyncIterableResponse) {
+				const lineParts = line.split('data:{');
+				for (const lineSinglePart of lineParts) {
+					const lineSinglePartTrimmed = lineSinglePart.trim();
+					if (lineSinglePartTrimmed === '') {
+						continue;
+					}
+					const conversationMessage = JSON.parse('{' + lineSinglePartTrimmed) as SideCarAgentEvent;
+					yield conversationMessage;
 				}
-				const conversationMessage = JSON.parse('{' + lineSinglePartTrimmed) as SideCarAgentEvent;
-				yield conversationMessage;
 			}
+		} catch (error) {
+			// Yield error event before throwing
+			yield {
+				session_id: sessionId,
+				started: false,
+			};
+			throw error; // Re-throw to be caught by caller
 		}
 	}
 
@@ -1261,50 +1279,59 @@ export class SideCarClient {
 		projectLabels: string[],
 		workosAccessToken: string,
 	): AsyncIterableIterator<SideCarAgentEvent> {
-		const baseUrl = new URL(this._url);
-		const allFiles = vscode.workspace.textDocuments.filter((textDocument) => {
-			return textDocument.uri.scheme === 'file';
-		}).map((textDocument) => {
-			return textDocument.uri.fsPath;
-		});
-		const openFiles = vscode.window.visibleTextEditors.filter((textDocument) => {
-			return textDocument.document.uri.scheme === 'file';
-		}).map((textDocument) => {
-			return textDocument.document.uri.fsPath;
-		});
-		const currentShell = detectDefaultShell();
-		const sideCarModelConfiguration = await getSideCarModelConfiguration(await vscode.modelSelection.getConfiguration(), workosAccessToken);
-		baseUrl.pathname = '/api/agentic/agent_session_plan_iterate';
-		const url = baseUrl.toString();
-		const body = {
-			session_id: sessionId,
-			exchange_id: exchangeId,
-			editor_url: editorUrl,
-			query,
-			user_context: await convertVSCodeVariableToSidecarHackingForPlan(variables, query),
-			agent_mode: agentMode.toString(),
-			repo_ref: repoRef.getRepresentation(),
-			project_labels: projectLabels,
-			root_directory: vscode.workspace.rootPath,
-			codebase_search: false,
-			access_token: workosAccessToken,
-			model_configuration: sideCarModelConfiguration,
-			all_files: allFiles,
-			open_files: openFiles,
-			shell: currentShell,
-		};
+		try {
+			const baseUrl = new URL(this._url);
+			const allFiles = vscode.workspace.textDocuments.filter((textDocument) => {
+				return textDocument.uri.scheme === 'file';
+			}).map((textDocument) => {
+				return textDocument.uri.fsPath;
+			});
+			const openFiles = vscode.window.visibleTextEditors.filter((textDocument) => {
+				return textDocument.document.uri.scheme === 'file';
+			}).map((textDocument) => {
+				return textDocument.document.uri.fsPath;
+			});
+			const currentShell = detectDefaultShell();
+			const sideCarModelConfiguration = await getSideCarModelConfiguration(await vscode.modelSelection.getConfiguration(), workosAccessToken);
+			baseUrl.pathname = '/api/agentic/agent_session_plan_iterate';
+			const url = baseUrl.toString();
+			const body = {
+				session_id: sessionId,
+				exchange_id: exchangeId,
+				editor_url: editorUrl,
+				query,
+				user_context: await convertVSCodeVariableToSidecarHackingForPlan(variables, query),
+				agent_mode: agentMode.toString(),
+				repo_ref: repoRef.getRepresentation(),
+				project_labels: projectLabels,
+				root_directory: vscode.workspace.rootPath,
+				codebase_search: false,
+				access_token: workosAccessToken,
+				model_configuration: sideCarModelConfiguration,
+				all_files: allFiles,
+				open_files: openFiles,
+				shell: currentShell,
+			};
 
-		const asyncIterableResponse = callServerEventStreamingBufferedPOST(url, body);
-		for await (const line of asyncIterableResponse) {
-			const lineParts = line.split('data:{');
-			for (const lineSinglePart of lineParts) {
-				const lineSinglePartTrimmed = lineSinglePart.trim();
-				if (lineSinglePartTrimmed === '') {
-					continue;
+			const asyncIterableResponse = callServerEventStreamingBufferedPOST(url, body);
+			for await (const line of asyncIterableResponse) {
+				const lineParts = line.split('data:{');
+				for (const lineSinglePart of lineParts) {
+					const lineSinglePartTrimmed = lineSinglePart.trim();
+					if (lineSinglePartTrimmed === '') {
+						continue;
+					}
+					const conversationMessage = JSON.parse('{' + lineSinglePartTrimmed) as SideCarAgentEvent;
+					yield conversationMessage;
 				}
-				const conversationMessage = JSON.parse('{' + lineSinglePartTrimmed) as SideCarAgentEvent;
-				yield conversationMessage;
 			}
+		} catch (error) {
+			// Yield error event before throwing
+			yield {
+				session_id: sessionId,
+				started: false,
+			};
+			throw error; // Re-throw to be caught by caller
 		}
 	}
 
@@ -1319,50 +1346,59 @@ export class SideCarClient {
 		projectLabels: string[],
 		workosAccessToken: string,
 	): AsyncIterableIterator<SideCarAgentEvent> {
-		const baseUrl = new URL(this._url);
-		const sideCarModelConfiguration = await getSideCarModelConfiguration(await vscode.modelSelection.getConfiguration(), workosAccessToken);
-		const allFiles = vscode.workspace.textDocuments.map((textDocument) => {
-			return textDocument.uri.fsPath;
-		});
-		const openFiles = vscode.window.visibleTextEditors.map((textDocument) => {
-			return textDocument.document.uri.fsPath;
-		});
-		const currentShell = detectDefaultShell();
-		const sidecarAgentUsesReasoning = sidecarUsesAgentReasoning();
-		baseUrl.pathname = '/api/agentic/agent_session_edit_anchored';
-		const aideRulesContent = await readAideRulesContent();
-		const url = baseUrl.toString();
-		const body = {
-			session_id: sessionId,
-			exchange_id: exchangeId,
-			editor_url: editorUrl,
-			query,
-			user_context: await convertVSCodeVariableToSidecarHackingForPlan(variables, query),
-			agent_mode: agentMode.toString(),
-			repo_ref: repoRef.getRepresentation(),
-			project_labels: projectLabels,
-			root_directory: vscode.workspace.rootPath,
-			codebase_search: false,
-			access_token: workosAccessToken,
-			model_configuration: sideCarModelConfiguration,
-			all_files: allFiles,
-			open_files: openFiles,
-			shell: currentShell,
-			aide_rules: aideRulesContent,
-			reasoning: sidecarAgentUsesReasoning,
-		};
+		try {
+			const baseUrl = new URL(this._url);
+			const sideCarModelConfiguration = await getSideCarModelConfiguration(await vscode.modelSelection.getConfiguration(), workosAccessToken);
+			const allFiles = vscode.workspace.textDocuments.map((textDocument) => {
+				return textDocument.uri.fsPath;
+			});
+			const openFiles = vscode.window.visibleTextEditors.map((textDocument) => {
+				return textDocument.document.uri.fsPath;
+			});
+			const currentShell = detectDefaultShell();
+			const sidecarAgentUsesReasoning = sidecarUsesAgentReasoning();
+			baseUrl.pathname = '/api/agentic/agent_session_edit_anchored';
+			const aideRulesContent = await readAideRulesContent();
+			const url = baseUrl.toString();
+			const body = {
+				session_id: sessionId,
+				exchange_id: exchangeId,
+				editor_url: editorUrl,
+				query,
+				user_context: await convertVSCodeVariableToSidecarHackingForPlan(variables, query),
+				agent_mode: agentMode.toString(),
+				repo_ref: repoRef.getRepresentation(),
+				project_labels: projectLabels,
+				root_directory: vscode.workspace.rootPath,
+				codebase_search: false,
+				access_token: workosAccessToken,
+				model_configuration: sideCarModelConfiguration,
+				all_files: allFiles,
+				open_files: openFiles,
+				shell: currentShell,
+				aide_rules: aideRulesContent,
+				reasoning: sidecarAgentUsesReasoning,
+			};
 
-		const asyncIterableResponse = callServerEventStreamingBufferedPOST(url, body);
-		for await (const line of asyncIterableResponse) {
-			const lineParts = line.split('data:{');
-			for (const lineSinglePart of lineParts) {
-				const lineSinglePartTrimmed = lineSinglePart.trim();
-				if (lineSinglePartTrimmed === '') {
-					continue;
+			const asyncIterableResponse = callServerEventStreamingBufferedPOST(url, body);
+			for await (const line of asyncIterableResponse) {
+				const lineParts = line.split('data:{');
+				for (const lineSinglePart of lineParts) {
+					const lineSinglePartTrimmed = lineSinglePart.trim();
+					if (lineSinglePartTrimmed === '') {
+						continue;
+					}
+					const conversationMessage = JSON.parse('{' + lineSinglePartTrimmed) as SideCarAgentEvent;
+					yield conversationMessage;
 				}
-				const conversationMessage = JSON.parse('{' + lineSinglePartTrimmed) as SideCarAgentEvent;
-				yield conversationMessage;
 			}
+		} catch (error) {
+			// Yield error event before throwing
+			yield {
+				session_id: sessionId,
+				started: false,
+			};
+			throw error; // Re-throw to be caught by caller
 		}
 	}
 
@@ -1440,60 +1476,69 @@ export class SideCarClient {
 		projectLabels: string[],
 		workosAccessToken: string,
 	): AsyncIterableIterator<SideCarAgentEvent> {
-		const baseUrl = new URL(this._url);
-		const allFiles = vscode.workspace.textDocuments.filter((textDocument) => {
-			return textDocument.uri.scheme === 'file';
-		}).map((textDocument) => {
-			return textDocument.uri.fsPath;
-		});
-		const openFiles = vscode.window.visibleTextEditors.filter((textDocument) => {
-			return textDocument.document.uri.scheme === 'file';
-		}).map((textDocument) => {
-			return textDocument.document.uri.fsPath;
-		});
-		const currentShell = detectDefaultShell();
-		const sideCarModelConfiguration = await getSideCarModelConfiguration(await vscode.modelSelection.getConfiguration(), workosAccessToken);
-		const userContext = await convertVSCodeVariableToSidecarHackingForPlan(variables, query);
-		const sidecarAgentUsesReasoning = sidecarUsesAgentReasoning();
-		baseUrl.pathname = '/api/agentic/agent_session_chat';
-		const aideRulesContent = await readAideRulesContent();
-		const url = baseUrl.toString();
-		const body = {
-			session_id: sessionId,
-			exchange_id: exchangeId,
-			editor_url: editorUrl,
-			query,
-			user_context: userContext,
-			agent_mode: agentMode.toString(),
-			repo_ref: repoRef.getRepresentation(),
-			project_labels: projectLabels,
-			root_directory: vscode.workspace.rootPath ?? '',
-			codebase_search: false,
-			access_token: workosAccessToken,
-			model_configuration: sideCarModelConfiguration,
-			all_files: allFiles,
-			open_files: openFiles,
-			shell: currentShell,
-			aide_rules: aideRulesContent,
-			reasoning: sidecarAgentUsesReasoning,
-		};
+		try {
+			const baseUrl = new URL(this._url);
+			const allFiles = vscode.workspace.textDocuments.filter((textDocument) => {
+				return textDocument.uri.scheme === 'file';
+			}).map((textDocument) => {
+				return textDocument.uri.fsPath;
+			});
+			const openFiles = vscode.window.visibleTextEditors.filter((textDocument) => {
+				return textDocument.document.uri.scheme === 'file';
+			}).map((textDocument) => {
+				return textDocument.document.uri.fsPath;
+			});
+			const currentShell = detectDefaultShell();
+			const sideCarModelConfiguration = await getSideCarModelConfiguration(await vscode.modelSelection.getConfiguration(), workosAccessToken);
+			const userContext = await convertVSCodeVariableToSidecarHackingForPlan(variables, query);
+			const sidecarAgentUsesReasoning = sidecarUsesAgentReasoning();
+			baseUrl.pathname = '/api/agentic/agent_session_chat';
+			const aideRulesContent = await readAideRulesContent();
+			const url = baseUrl.toString();
+			const body = {
+				session_id: sessionId,
+				exchange_id: exchangeId,
+				editor_url: editorUrl,
+				query,
+				user_context: userContext,
+				agent_mode: agentMode.toString(),
+				repo_ref: repoRef.getRepresentation(),
+				project_labels: projectLabels,
+				root_directory: vscode.workspace.rootPath ?? '',
+				codebase_search: false,
+				access_token: workosAccessToken,
+				model_configuration: sideCarModelConfiguration,
+				all_files: allFiles,
+				open_files: openFiles,
+				shell: currentShell,
+				aide_rules: aideRulesContent,
+				reasoning: sidecarAgentUsesReasoning,
+			};
 
-		// consider using headers
-		const headers = {
-			'Authorization': `Bearer ${workosAccessToken}`,
-		};
+			// consider using headers
+			const headers = {
+				'Authorization': `Bearer ${workosAccessToken}`,
+			};
 
-		const asyncIterableResponse = callServerEventStreamingBufferedPOST(url, body, headers);
-		for await (const line of asyncIterableResponse) {
-			const lineParts = line.split('data:{');
-			for (const lineSinglePart of lineParts) {
-				const lineSinglePartTrimmed = lineSinglePart.trim();
-				if (lineSinglePartTrimmed === '') {
-					continue;
+			const asyncIterableResponse = callServerEventStreamingBufferedPOST(url, body, headers);
+			for await (const line of asyncIterableResponse) {
+				const lineParts = line.split('data:{');
+				for (const lineSinglePart of lineParts) {
+					const lineSinglePartTrimmed = lineSinglePart.trim();
+					if (lineSinglePartTrimmed === '') {
+						continue;
+					}
+					const conversationMessage = JSON.parse('{' + lineSinglePartTrimmed) as SideCarAgentEvent;
+					yield conversationMessage;
 				}
-				const conversationMessage = JSON.parse('{' + lineSinglePartTrimmed) as SideCarAgentEvent;
-				yield conversationMessage;
 			}
+		} catch (error) {
+			// Yield error event before throwing
+			yield {
+				session_id: sessionId,
+				started: false,
+			};
+			throw error; // Re-throw to be caught by caller
 		}
 	}
 
