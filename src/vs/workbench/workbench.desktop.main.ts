@@ -43,6 +43,7 @@ import './services/url/electron-sandbox/urlService.js';
 import './services/lifecycle/electron-sandbox/lifecycleService.js';
 import './services/title/electron-sandbox/titleService.js';
 import './services/bottomBarPart/electron-sandbox/bottomBarPartService.js';
+import './services/previewPart/electron-sandbox/previewPartService.js';
 import './services/host/electron-sandbox/nativeHostService.js';
 import './services/request/electron-sandbox/requestService.js';
 import './services/clipboard/electron-sandbox/clipboardService.js';

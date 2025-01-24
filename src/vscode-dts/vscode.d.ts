@@ -9766,7 +9766,7 @@ declare module 'vscode' {
 		 * @param viewColumn View column to show the panel in. Shows in the current `viewColumn` if undefined.
 		 * @param preserveFocus When `true`, the webview will not take focus.
 		 */
-		reveal(viewColumn?: ViewColumn, preserveFocus?: boolean): void;
+		reveal(viewColumn?: ViewColumn, preserveFocus?: boolean, inPreview?: boolean): void;
 
 		/**
 		 * Dispose of the webview panel.
@@ -11160,7 +11160,14 @@ declare module 'vscode' {
 			 * An optional flag that when `true` will stop the panel from taking focus.
 			 */
 			readonly preserveFocus?: boolean;
-		}, options?: WebviewPanelOptions & WebviewOptions): WebviewPanel;
+			/**
+			 * An optional flag that when `true` will open the panel in the preview tab
+			 */
+			readonly inPreview?: boolean;
+
+		}, options?: WebviewPanelOptions & WebviewOptions,
+
+		): WebviewPanel;
 
 		/**
 		 * Set a message to the status bar. This is a short hand for the more powerful

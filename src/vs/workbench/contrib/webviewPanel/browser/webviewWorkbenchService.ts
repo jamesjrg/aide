@@ -19,11 +19,12 @@ import { IOverlayWebview, IWebviewService, WebviewInitInfo } from '../../webview
 import { CONTEXT_ACTIVE_WEBVIEW_PANEL_ID } from './webviewEditor.js';
 import { WebviewIconManager, WebviewIcons } from './webviewIconManager.js';
 import { IEditorGroup, IEditorGroupsService } from '../../../services/editor/common/editorGroupsService.js';
-import { ACTIVE_GROUP_TYPE, IEditorService, SIDE_GROUP_TYPE } from '../../../services/editor/common/editorService.js';
+import { ACTIVE_GROUP_TYPE, IEditorService, PREVIEW_GROUP_TYPE, SIDE_GROUP_TYPE } from '../../../services/editor/common/editorService.js';
 import { WebviewInput, WebviewInputInitInfo } from './webviewEditorInput.js';
 
+
 export interface IWebViewShowOptions {
-	readonly group?: IEditorGroup | GroupIdentifier | ACTIVE_GROUP_TYPE | SIDE_GROUP_TYPE;
+	readonly group?: IEditorGroup | GroupIdentifier | ACTIVE_GROUP_TYPE | SIDE_GROUP_TYPE | PREVIEW_GROUP_TYPE;
 	readonly preserveFocus?: boolean;
 }
 
@@ -74,7 +75,7 @@ export interface IWebviewWorkbenchService {
 	 */
 	revealWebview(
 		webview: WebviewInput,
-		group: IEditorGroup | GroupIdentifier | ACTIVE_GROUP_TYPE | SIDE_GROUP_TYPE,
+		group: IEditorGroup | GroupIdentifier | ACTIVE_GROUP_TYPE | SIDE_GROUP_TYPE | PREVIEW_GROUP_TYPE,
 		preserveFocus: boolean
 	): void;
 
@@ -289,7 +290,9 @@ export class WebviewEditorService extends Disposable implements IWebviewWorkbenc
 		showOptions: IWebViewShowOptions,
 	): WebviewInput {
 		const webview = this._webviewService.createWebviewOverlay(webviewInitInfo);
+		// here viewType is "mainThreadWebview-<id>"
 		const webviewInput = this._instantiationService.createInstance(WebviewInput, { viewType, name: title, providedId: webviewInitInfo.providedViewType }, webview, this.iconManager);
+
 		this._editorService.openEditor(webviewInput, {
 			pinned: true,
 			preserveFocus: showOptions.preserveFocus,
@@ -302,11 +305,10 @@ export class WebviewEditorService extends Disposable implements IWebviewWorkbenc
 
 	public revealWebview(
 		webview: WebviewInput,
-		group: IEditorGroup | GroupIdentifier | ACTIVE_GROUP_TYPE | SIDE_GROUP_TYPE,
+		group: IEditorGroup | GroupIdentifier | ACTIVE_GROUP_TYPE | SIDE_GROUP_TYPE | PREVIEW_GROUP_TYPE,
 		preserveFocus: boolean
 	): void {
 		const topLevelEditor = this.findTopLevelEditorForWebview(webview);
-
 		this._editorService.openEditor(topLevelEditor, {
 			preserveFocus,
 			// preserve pre 1.38 behaviour to not make group active when preserveFocus: true

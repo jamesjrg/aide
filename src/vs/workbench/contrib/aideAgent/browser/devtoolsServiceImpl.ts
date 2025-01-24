@@ -28,6 +28,7 @@ import { convertBufferToScreenshotVariable } from './contrib/screenshot.js';
 import { IWorkspaceContextService } from '../../../../platform/workspace/common/workspace.js';
 import { IFileQuery, ISearchService, QueryType } from '../../../services/search/common/search.js';
 import { CancellationToken } from '../../../../base/common/cancellation.js';
+import { IPreviewPartService } from '../../../services/previewPart/browser/previewPartService.js';
 
 export class DevtoolsService extends Disposable implements IDevtoolsService {
 	declare _serviceBrand: undefined;
@@ -101,6 +102,7 @@ export class DevtoolsService extends Disposable implements IDevtoolsService {
 		@IHostService private readonly hostService: IHostService,
 		@IWorkspaceContextService private readonly workspaceContextService: IWorkspaceContextService,
 		@ISearchService private readonly searchService: ISearchService,
+		@IPreviewPartService private readonly previewPartService: IPreviewPartService
 	) {
 		super();
 
@@ -241,9 +243,17 @@ export class DevtoolsService extends Disposable implements IDevtoolsService {
 			const output = isLeading ? displayName : ' ' + displayName;
 
 			const screenshot = await this.hostService.getScreenshot();
+
+
+
+
 			if (screenshot) {
-				widget.attachmentModel.addContext(convertBufferToScreenshotVariable(screenshot));
+				const previewBoundingClientRect = this.previewPartService.getBoundingClientRect();
+				const croppedScreenShot = await cropImage(screenshot, previewBoundingClientRect);
+				widget.attachmentModel.addContext(convertBufferToScreenshotVariable(croppedScreenShot));
 			}
+
+
 
 			const success = input.executeEdits('addReactComponentSource', [{ range: replaceRange, text: output }]);
 			if (success) {
@@ -291,3 +301,71 @@ export class DevtoolsService extends Disposable implements IDevtoolsService {
 		this._onDidTriggerInspectingHostStop.fire();
 	}
 }
+
+
+
+type CropRectangle = {
+	x: number;
+	y: number;
+	width: number;
+	height: number;
+};
+
+async function cropImage(buffer: ArrayBufferLike, cropRectangle: CropRectangle): Promise<ArrayBufferLike> {
+
+	const originalBlob = new Blob([buffer]);
+	const url = URL.createObjectURL(originalBlob);
+	const img = await createImage(url);
+	// Clean up
+	URL.revokeObjectURL(url);
+
+	const canvas = document.createElement('canvas');
+	const ctx = canvas.getContext('2d');
+
+	if (!ctx) {
+		throw new Error('Failed to get canvas context');
+	}
+
+	// Set canvas dimensions to crop size
+	canvas.width = cropRectangle.width;
+	canvas.height = cropRectangle.height;
+
+	// Draw the cropped portion
+	ctx.drawImage(
+		img,
+		cropRectangle.x, cropRectangle.y,  // Start at this point
+		cropRectangle.width, cropRectangle.height, // Width and height of source rectangle
+		0, 0, // Place at canvas origin
+		cropRectangle.width, cropRectangle.height // Width and height of destination rectangle
+	);
+
+	return originalBlob.arrayBuffer();
+}
+
+function createImage(src: string): Promise<HTMLImageElement> {
+	return new Promise((resolve, reject) => {
+		const img = new Image();
+		img.onload = () => {
+			resolve(img);
+		};
+		img.onerror = reject;
+		img.src = src;
+	});
+}
+/*
+
+function canvasToBlob(canvas: HTMLCanvasElement): Promise<Blob> {
+	return new Promise((resolve, reject) => {
+		canvas.toBlob(
+			(blob) => {
+				if (blob) {
+					resolve(blob);
+				} else {
+					reject(new Error('Failed to create blob'));
+				}
+			},
+			'image/png'  // or 'image/jpeg', etc.
+		);
+	});
+}
+*/

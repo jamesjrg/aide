@@ -68,6 +68,7 @@ import { IDevtoolsService } from '../common/devtoolsService.js';
 import { DevtoolsService } from './devtoolsServiceImpl.js';
 import { IAideAgentTerminalService } from '../common/aideAgentTerminalService.js';
 import { AideAgentTerminalService } from './aideAgentTerminalServiceImpl.js';
+import { registerDevtoolsActions } from './actions/devtoolsActions.js';
 
 // Register configuration
 const configurationRegistry = Registry.as<IConfigurationRegistry>(ConfigurationExtensions.Configuration);
@@ -283,6 +284,8 @@ registerChatContextActions();
 registerChatDeveloperActions();
 registerAideAgentFloatingWidgetActions();
 registerCodeEditActions();
+
+registerDevtoolsActions();
 
 registerEditorFeature(ChatPasteProvidersFeature);
 

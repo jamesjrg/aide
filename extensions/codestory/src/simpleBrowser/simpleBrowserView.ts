@@ -16,6 +16,7 @@ export interface ShowOptions {
 	readonly preserveFocus?: boolean;
 	readonly originalUrl?: string;
 	readonly viewColumn?: vscode.ViewColumn;
+	readonly inPreview: boolean;
 }
 
 const enabledHosts = new Set<string>([
@@ -65,7 +66,8 @@ export class SimpleBrowserView extends Disposable {
 	): SimpleBrowserView {
 		const webview = vscode.window.createWebviewPanel(SimpleBrowserView.viewType, SimpleBrowserView.title, {
 			viewColumn: showOptions?.viewColumn ?? vscode.ViewColumn.Active,
-			preserveFocus: showOptions?.preserveFocus
+			preserveFocus: showOptions?.preserveFocus,
+			inPreview: showOptions?.inPreview,
 		}, {
 			retainContextWhenHidden: true,
 			...SimpleBrowserView.getWebviewOptions(extensionUri)
@@ -112,7 +114,7 @@ export class SimpleBrowserView extends Disposable {
 			this.dispose();
 		}));
 
-		this.show(url, { originalUrl });
+		this.show(url, { originalUrl, inPreview: true });
 	}
 
 	public override dispose() {
@@ -122,7 +124,7 @@ export class SimpleBrowserView extends Disposable {
 
 	public show(url: string, options?: ShowOptions) {
 		this._webviewPanel.webview.html = this.getHtml(url, options?.originalUrl);
-		this._webviewPanel.reveal(options?.viewColumn, options?.preserveFocus);
+		this._webviewPanel.reveal(options?.viewColumn, options?.preserveFocus, options?.inPreview);
 	}
 
 	private getHtml(url: string, originalUrl?: string) {

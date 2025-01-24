@@ -267,6 +267,7 @@ MenuRegistry.appendMenuItem(MenuId.MenubarViewMenu, {
 	order: 1
 });
 
+
 // Toggle Sidebar Visibility
 
 export class ToggleSidebarVisibilityAction extends Action2 {

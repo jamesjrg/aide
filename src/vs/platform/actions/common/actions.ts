@@ -51,6 +51,7 @@ export class MenuId {
 	private static readonly _instances = new Map<string, MenuId>();
 
 	static readonly CodestoryAccountMenu = new MenuId('CodestoryAccountMenu');
+	static readonly PreviewMenu = new MenuId('PreviewActionMenu');
 	static readonly RageShakeMenu = new MenuId('RageShakeMenu');
 	static readonly CommandPalette = new MenuId('CommandPalette');
 	static readonly DebugBreakpointsContext = new MenuId('DebugBreakpointsContext');

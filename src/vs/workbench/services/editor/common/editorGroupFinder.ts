@@ -9,7 +9,7 @@ import { ServicesAccessor } from '../../../../platform/instantiation/common/inst
 import { EditorInputWithOptions, isEditorInputWithOptions, IUntypedEditorInput, isEditorInput, EditorInputCapabilities } from '../../../common/editor.js';
 import { EditorInput } from '../../../common/editor/editorInput.js';
 import { IEditorGroup, GroupsOrder, preferredSideBySideGroupDirection, IEditorGroupsService } from './editorGroupsService.js';
-import { AUX_WINDOW_GROUP, AUX_WINDOW_GROUP_TYPE, PreferredGroup, SIDE_GROUP } from './editorService.js';
+import { AUX_WINDOW_GROUP, AUX_WINDOW_GROUP_TYPE, PreferredGroup, PREVIEW_GROUP, SIDE_GROUP } from './editorService.js';
 
 /**
  * Finds the target `IEditorGroup` given the instructions provided
@@ -66,8 +66,13 @@ function doFindGroup(input: EditorInputWithOptions | IUntypedEditorInput, prefer
 	const editor = isEditorInputWithOptions(input) ? input.editor : input;
 	const options = input.options;
 
+	// Group: Preview Part
+	if (preferredGroup === PREVIEW_GROUP) {
+		group = editorGroupService.getOrCreatePreviewEditorPart().activeGroup;
+	}
+
 	// Group: Instance of Group
-	if (preferredGroup && typeof preferredGroup !== 'number') {
+	else if (preferredGroup && typeof preferredGroup !== 'number') {
 		group = preferredGroup;
 	}
 

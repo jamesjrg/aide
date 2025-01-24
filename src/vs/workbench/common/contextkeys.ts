@@ -94,6 +94,12 @@ export const EditorTabsVisibleContext = new RawContextKey<boolean>('editorTabsVi
 //#endregion
 
 
+//#region < --- Preview --- >
+
+export const PreviewVisibleContext = new RawContextKey<boolean>('previewVisible', false, localize('previewVisible', "Whether the web app preview is visible"));
+
+//#endregion
+
 //#region < --- Side Bar --- >
 
 export const SideBarVisibleContext = new RawContextKey<boolean>('sideBarVisible', false, localize('sideBarVisible', "Whether the sidebar is visible"));

@@ -21,7 +21,7 @@ import { WebviewIcons } from '../../contrib/webviewPanel/browser/webviewIconMana
 import { IWebViewShowOptions, IWebviewWorkbenchService } from '../../contrib/webviewPanel/browser/webviewWorkbenchService.js';
 import { editorGroupToColumn } from '../../services/editor/common/editorGroupColumn.js';
 import { GroupLocation, GroupsOrder, IEditorGroup, IEditorGroupsService, preferredSideBySideGroupDirection } from '../../services/editor/common/editorGroupsService.js';
-import { ACTIVE_GROUP, IEditorService, PreferredGroup, SIDE_GROUP } from '../../services/editor/common/editorService.js';
+import { ACTIVE_GROUP, IEditorService, PreferredGroup, SIDE_GROUP, PREVIEW_GROUP } from '../../services/editor/common/editorService.js';
 import { IExtensionService } from '../../services/extensions/common/extensions.js';
 import { IExtHostContext } from '../../services/extensions/common/extHostCustomers.js';
 
@@ -155,7 +155,8 @@ export class MainThreadWebviewPanels extends Disposable implements extHostProtoc
 		initData: extHostProtocol.IWebviewInitData,
 		showOptions: extHostProtocol.WebviewPanelShowOptions,
 	): void {
-		const targetGroup = this.getTargetGroupFromShowOptions(showOptions);
+		// This is where the webview gets created
+		const targetGroup = showOptions.inPreview ? PREVIEW_GROUP : this.getTargetGroupFromShowOptions(showOptions);
 		const mainThreadShowOptions: IWebViewShowOptions = showOptions ? {
 			preserveFocus: !!showOptions.preserveFocus,
 			group: targetGroup
@@ -215,7 +216,7 @@ export class MainThreadWebviewPanels extends Disposable implements extHostProtoc
 			return;
 		}
 
-		const targetGroup = this.getTargetGroupFromShowOptions(showOptions);
+		const targetGroup = showOptions.inPreview ? PREVIEW_GROUP : this.getTargetGroupFromShowOptions(showOptions);
 		this._webviewWorkbenchService.revealWebview(webview, targetGroup, !!showOptions.preserveFocus);
 	}
 
@@ -325,6 +326,7 @@ export class MainThreadWebviewPanels extends Disposable implements extHostProtoc
 				viewStates[handle] = {
 					visible: topLevelInput === group.activeEditor,
 					active: editorInput === activeEditorInput,
+					inPreview: viewStates[handle].inPreview,
 					position: editorGroupToColumn(this._editorGroupService, group.id),
 				};
 			}

@@ -485,6 +485,8 @@ export interface IAuxiliaryEditorPart extends IEditorPart {
 	close(): boolean;
 }
 
+export interface IPreviewEditorPart extends IEditorPart { }
+
 export interface IEditorWorkingSet {
 	readonly id: string;
 	readonly name: string;
@@ -559,6 +561,11 @@ export interface IEditorGroupsService extends IEditorGroupsContainer {
 	 * in there at the optional position and size on screen.
 	 */
 	createAuxiliaryEditorPart(options?: { bounds?: Partial<IRectangle> }): Promise<IAuxiliaryEditorPart>;
+	/**
+		 * Opens a new window with a full editor part instantiated
+		 * in there at the optional position and size on screen.
+		 */
+	getOrCreatePreviewEditorPart(): IPreviewEditorPart;
 
 	/**
 	 * Returns the instantiation service that is scoped to the

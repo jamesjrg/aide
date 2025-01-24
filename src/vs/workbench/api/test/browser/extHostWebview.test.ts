@@ -85,6 +85,7 @@ suite('ExtHostWebview', () => {
 			panelOptions: {},
 			webviewOptions: {},
 			active: true,
+			inPreview: false,
 		}, 0 as EditorGroupColumn);
 		assert.strictEqual(lastInvokedDeserializer, serializerA);
 
@@ -102,6 +103,7 @@ suite('ExtHostWebview', () => {
 			panelOptions: {},
 			webviewOptions: {},
 			active: true,
+			inPreview: false,
 		}, 0 as EditorGroupColumn);
 		assert.strictEqual(lastInvokedDeserializer, serializerB);
 	});
