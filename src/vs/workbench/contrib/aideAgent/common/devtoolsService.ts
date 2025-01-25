@@ -18,7 +18,7 @@ export interface IDevtoolsService {
 	onDidTriggerInspectingHostStart: Event<void>;
 	onDidTriggerInspectingHostStop: Event<void>;
 	isInspecting: boolean;
-	latestPayload: Location | null;
+	latestPayload: Location | null | undefined;
 	latestResource: URI | undefined;
 }
 
