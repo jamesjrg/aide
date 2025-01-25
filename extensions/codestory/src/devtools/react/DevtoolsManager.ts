@@ -246,7 +246,7 @@ export class ReactDevtoolsManager extends vscode.Disposable {
 			}
 
 			if (this.activeSession !== session) {
-
+				this._activeInspectedElement = undefined;
 				this.clearSessionDisposables();
 
 				this.activeSessionDisposables.push(
