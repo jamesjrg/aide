@@ -71,7 +71,8 @@ export class DevtoolsSession extends vscode.Disposable {
 		return this._status;
 	}
 
-	private _inspectedElement: InspectedElementPayload | null = null;
+	// undefined is the default, null is for invalid paths
+	private _inspectedElement: InspectedElementPayload | undefined | null;
 	get inspectedElement() {
 		return this._inspectedElement;
 	}
@@ -84,6 +85,7 @@ export class DevtoolsSession extends vscode.Disposable {
 		}
 		this._onStatusChange.fire(status);
 	}
+
 
 	private updateInspectHost(isInspecting: boolean) {
 		this._onInspectHostChange.fire(isInspecting);
@@ -207,7 +209,7 @@ export class ReactDevtoolsManager extends vscode.Disposable {
 	private _sessions = new Map<number, DevtoolsSession>;
 
 	get sessions(): ReadonlyMap<number, DevtoolsSession> {
-		return this.sessions;
+		return this._sessions;
 	}
 
 	private activeSession: DevtoolsSession | undefined;
@@ -244,7 +246,7 @@ export class ReactDevtoolsManager extends vscode.Disposable {
 			}
 
 			if (this.activeSession !== session) {
-
+				this._activeInspectedElement = undefined;
 				this.clearSessionDisposables();
 
 				this.activeSessionDisposables.push(
@@ -277,7 +279,7 @@ export class ReactDevtoolsManager extends vscode.Disposable {
 		});
 	}
 
-	private _activeInspectedElement: InspectedElementPayload | null = null;
+	private _activeInspectedElement: InspectedElementPayload | undefined | null;
 	get activeInspectedElement() {
 		return this._activeInspectedElement;
 	}
