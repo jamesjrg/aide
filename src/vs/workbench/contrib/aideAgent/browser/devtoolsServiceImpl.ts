@@ -86,7 +86,7 @@ export class DevtoolsService extends Disposable implements IDevtoolsService {
 	set isInspecting(isInspecting: boolean) {
 		this._isInspecting.set(isInspecting);
 		// Stopped inspecting and we have some payload
-		if (!isInspecting && this._latestPayload) {
+		if (!isInspecting && this._latestPayload !== null) {
 			this.addReference(this._latestPayload);
 		}
 	}

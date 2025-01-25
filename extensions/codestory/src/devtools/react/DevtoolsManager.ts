@@ -207,7 +207,7 @@ export class ReactDevtoolsManager extends vscode.Disposable {
 	private _sessions = new Map<number, DevtoolsSession>;
 
 	get sessions(): ReadonlyMap<number, DevtoolsSession> {
-		return this.sessions;
+		return this._sessions;
 	}
 
 	private activeSession: DevtoolsSession | undefined;
