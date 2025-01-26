@@ -550,14 +550,17 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 				}
 
 				if (event.event.Error) {
-					latestResponseStream?.stream.toolTypeError({
-						message: `${event.event.Error.message}.\n\nWe\'d appreciate it if you could report this session using the feedback tool above - this is on us. Please try again.`
-					});
-					latestResponseStream?.stream.stage({ message: 'Error' });
-					errorCallback?.();
-					const openStreams = this.responseStreamCollection.getAllResponseStreams();
-					for (const stream of openStreams) {
-						this.closeAndRemoveResponseStream(event.request_id, stream.exchangeId);
+					const stream = latestResponseStream ?? await this.createNewResponseStream(event.request_id);
+					if (stream) {
+						stream.stream.toolTypeError({
+							message: `${event.event.Error.message}.\n\nWe\'d appreciate it if you could report this session using the feedback tool above - this is on us. Please try again.`
+						});
+						stream.stream.stage({ message: 'Error' });
+						errorCallback?.();
+						const openStreams = this.responseStreamCollection.getAllResponseStreams();
+						for (const openStream of openStreams) {
+							this.closeAndRemoveResponseStream(event.request_id, openStream.exchangeId);
+						}
 					}
 					return;
 				}
@@ -852,14 +855,7 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 				throw new SidecarConnectionFailedError();
 			}
 		} catch (error) {
-			let responseStream = latestResponseStream;
-			if (!responseStream) {
-				const { exchange_id: exchangeId } = await this.newExchangeIdForSession(sessionId);
-				if (exchangeId) {
-					responseStream = this.responseStreamCollection.getResponseStream({ sessionId, exchangeId });
-				}
-			}
-
+			const responseStream = latestResponseStream ?? await this.createNewResponseStream(sessionId);
 			if (!responseStream) {
 				throw error;
 			}
@@ -876,6 +872,16 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 				this.closeAndRemoveResponseStream(sessionId, stream.exchangeId);
 			}
 		}
+	}
+
+	private async createNewResponseStream(sessionId: string) {
+		let responseStream: vscode.AideAgentEventSenderResponse | undefined;
+		const { exchange_id: exchangeId } = await this.newExchangeIdForSession(sessionId);
+		if (exchangeId) {
+			responseStream = this.responseStreamCollection.getResponseStream({ sessionId, exchangeId });
+		}
+
+		return responseStream;
 	}
 
 	// TODO (@g-danna, @theskcd) workaround to close the message visually but keep
