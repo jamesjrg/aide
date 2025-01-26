@@ -187,8 +187,15 @@ export class SideCarClient {
 				if (lineSinglePartTrimmed === '') {
 					continue;
 				}
-				const inlineAgentMessage = JSON.parse('{' + lineSinglePartTrimmed) as InLineAgentMessage;
-				yield inlineAgentMessage;
+				try {
+					// Attempt to parse JSON and yield
+					const inlineAgentMessage = JSON.parse('{' + lineSinglePartTrimmed) as InLineAgentMessage;
+					yield inlineAgentMessage;
+				} catch (parseError) {
+					// Log problematic content and error details
+					console.error(`Failed to parse JSON. Raw content: '{${lineSinglePartTrimmed}'`);
+					console.error('Parsing error details:', parseError);
+				}
 			}
 		}
 	}
@@ -242,8 +249,15 @@ export class SideCarClient {
 				if (lineSinglePartTrimmed === '') {
 					continue;
 				}
-				const editFileResponse = JSON.parse('{' + lineSinglePartTrimmed) as EditFileResponse;
-				yield editFileResponse;
+				try {
+					// Attempt to parse JSON and yield
+					const editFileResponse = JSON.parse('{' + lineSinglePartTrimmed) as EditFileResponse;
+					yield editFileResponse;
+				} catch (parseError) {
+					// Log problematic content and error details
+					console.error(`Failed to parse JSON. Raw content: '{${lineSinglePartTrimmed}'`);
+					console.error('Parsing error details:', parseError);
+				}
 			}
 		}
 	}
@@ -348,8 +362,15 @@ export class SideCarClient {
 				if (lineSinglePartTrimmed === '') {
 					continue;
 				}
-				const conversationMessage = JSON.parse('{' + lineSinglePartTrimmed) as ConversationMessage;
-				yield conversationMessage;
+				try {
+					// Attempt to parse JSON and yield
+					const conversationMessage = JSON.parse('{' + lineSinglePartTrimmed) as ConversationMessage;
+					yield conversationMessage;
+				} catch (parseError) {
+					// Log problematic content and error details
+					console.error(`Failed to parse JSON. Raw content: '{${lineSinglePartTrimmed}'`);
+					console.error('Parsing error details:', parseError);
+				}
 			}
 		}
 	}
@@ -381,8 +402,15 @@ export class SideCarClient {
 				if (lineSinglePartTrimmed === '') {
 					continue;
 				}
-				const conversationMessage = JSON.parse('{' + lineSinglePartTrimmed) as ConversationMessage;
-				yield conversationMessage;
+				try {
+					// Attempt to parse JSON and yield
+					const conversationMessage = JSON.parse('{' + lineSinglePartTrimmed) as ConversationMessage;
+					yield conversationMessage;
+				} catch (parseError) {
+					// Log problematic content and error details
+					console.error(`Failed to parse JSON. Raw content: '{${lineSinglePartTrimmed}'`);
+					console.error('Parsing error details:', parseError);
+				}
 			}
 		}
 	}
@@ -488,10 +516,15 @@ export class SideCarClient {
 				if (lineSinglePartTrimmed === '') {
 					continue;
 				}
-				// console.log('string parts');
-				// console.log(lineSinglePartTrimmed);
-				const conversationMessage = JSON.parse('{' + lineSinglePartTrimmed) as ConversationMessage;
-				yield conversationMessage;
+				try {
+					// Attempt to parse JSON and yield
+					const conversationMessage = JSON.parse('{' + lineSinglePartTrimmed) as ConversationMessage;
+					yield conversationMessage;
+				} catch (parseError) {
+					// Log problematic content and error details
+					console.error(`Failed to parse JSON. Raw content: '{${lineSinglePartTrimmed}'`);
+					console.error('Parsing error details:', parseError);
+				}
 			}
 		}
 	}
@@ -519,8 +552,15 @@ export class SideCarClient {
 				if (lineSinglePartTrimmed === '') {
 					continue;
 				}
-				const conversationMessage = JSON.parse('{' + lineSinglePartTrimmed) as ConversationMessage;
-				yield conversationMessage;
+				try {
+					// Attempt to parse JSON and yield
+					const conversationMessage = JSON.parse('{' + lineSinglePartTrimmed) as ConversationMessage;
+					yield conversationMessage;
+				} catch (parseError) {
+					// Log problematic content and error details
+					console.error(`Failed to parse JSON. Raw content: '{${lineSinglePartTrimmed}'`);
+					console.error('Parsing error details:', parseError);
+				}
 			}
 		}
 	}
@@ -553,9 +593,15 @@ export class SideCarClient {
 				if (lineSinglePartTrimmed === '') {
 					continue;
 				}
-				const conversationMessage = JSON.parse('{' + lineSinglePartTrimmed) as ConversationMessage;
-				// console.log('[search][stream] whats the message from the stream');
-				yield conversationMessage;
+				try {
+					// Attempt to parse JSON and yield
+					const conversationMessage = JSON.parse('{' + lineSinglePartTrimmed) as ConversationMessage;
+					yield conversationMessage;
+				} catch (parseError) {
+					// Log problematic content and error details
+					console.error(`Failed to parse JSON. Raw content: '{${lineSinglePartTrimmed}'`);
+					console.error('Parsing error details:', parseError);
+				}
 			}
 		}
 	}
@@ -1107,8 +1153,15 @@ export class SideCarClient {
 					if (lineSinglePartTrimmed === '') {
 						continue;
 					}
-					const conversationMessage = JSON.parse('{' + lineSinglePartTrimmed) as SideCarAgentEvent;
-					yield conversationMessage;
+					try {
+						// Attempt to parse JSON and yield
+						const conversationMessage = JSON.parse('{' + lineSinglePartTrimmed) as SideCarAgentEvent;
+						yield conversationMessage;
+					} catch (parseError) {
+						// Log problematic content and error details
+						console.error(`Failed to parse JSON. Raw content: '{${lineSinglePartTrimmed}'`);
+						console.error('Parsing error details:', parseError);
+					}
 				}
 			}
 		} catch (error) {
