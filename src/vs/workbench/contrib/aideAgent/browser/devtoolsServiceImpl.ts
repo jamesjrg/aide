@@ -7,8 +7,6 @@ import { getWindow } from '../../../../base/browser/dom.js';
 import { CancellationToken } from '../../../../base/common/cancellation.js';
 import { Emitter } from '../../../../base/common/event.js';
 import { Disposable } from '../../../../base/common/lifecycle.js';
-import { URI } from '../../../../base/common/uri.js';
-import { Location } from '../../../../editor/common/languages.js';
 import { AgentMode } from '../../../../platform/aideAgent/common/model.js';
 import { IContextKey, IContextKeyService } from '../../../../platform/contextkey/common/contextkey.js';
 import { IEnvironmentService } from '../../../../platform/environment/common/environment.js';
@@ -23,9 +21,7 @@ import { DevtoolsStatus, IDevtoolsService, InspectionResult } from '../common/de
 import { CONTEXT_DEVTOOLS_STATUS, CONTEXT_IS_DEVTOOLS_FEATURE_ENABLED, CONTEXT_IS_INSPECTING_HOST } from '../common/devtoolsServiceContextKeys.js';
 import { ChatViewId } from './aideAgent.js';
 import { ChatViewPane } from './aideAgentViewPane.js';
-import { IFileService } from '../../../../platform/files/common/files.js';
 import { URI } from '../../../../base/common/uri.js';
-import { IEnvironmentService } from '../../../../platform/environment/common/environment.js';
 import { ChatDynamicVariableModel } from './contrib/aideAgentDynamicVariables.js';
 import { convertBufferToScreenshotVariable } from './contrib/screenshot.js';
 
