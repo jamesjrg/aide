@@ -59,7 +59,7 @@ export default tseslint.config(
 			'no-sparse-arrays': 'warn',
 			'no-throw-literal': 'warn',
 			'no-unsafe-finally': 'warn',
-			'no-unused-labels': 'warn',
+			'no-unused-labels': 'off',
 			'no-misleading-character-class': 'warn',
 			'no-restricted-globals': [
 				'warn',

@@ -563,6 +563,8 @@ class ExtensionsScanner extends Disposable {
 	}
 
 	async scanExtensions(input: ExtensionScannerInput): Promise<IRelaxedScannedExtension[]> {
+		console.log(input);
+		throw new Error('hi');
 		return input.profile
 			? this.scanExtensionsFromProfile(input)
 			: this.scanExtensionsFromLocation(input);
