@@ -7,7 +7,7 @@ import * as vscode from 'vscode';
 // @ts-expect-error external
 import createDevtools from './dist/standalone.js';
 import { proxy, ProxyResult } from './proxy';
-import { DevtoolsStatus, DevtoolsType, InspectedElementPayload, InspectElementParsedFullData } from './types';
+import { DevtoolsStatus, DevtoolsType, InfoOrigin, InspectedElementPayload, InspectElementParsedFullData, InspectionResult } from './types';
 import { findTsxNodeAtLine } from '../../languages/tsxCodeSymbols.js';
 import { join } from 'node:path';
 
@@ -48,7 +48,7 @@ export class DevtoolsSession extends vscode.Disposable {
 	private _onStatusChange = new vscode.EventEmitter<DevtoolsStatus>();
 	onStatusChange = this._onStatusChange.event;
 
-	private _onInspectedElementChange = new vscode.EventEmitter<vscode.Location | null>();
+	private _onInspectedElementChange = new vscode.EventEmitter<InspectionResult | null>();
 	onInspectedElementChange = this._onInspectedElementChange.event;
 
 	private _onInspectHostChange = new vscode.EventEmitter<boolean>();
@@ -107,11 +107,11 @@ export class DevtoolsSession extends vscode.Disposable {
 		}
 	}
 
-	private async getValidReference(payload: InspectElementParsedFullData): Promise<vscode.Location | null> {
+	private async getValidReference(payload: InspectElementParsedFullData): Promise<InspectionResult | null> {
 		try {
 			const { parsedSource } = payload.value;
 			if (parsedSource) {
-				const { source, column, line } = parsedSource;
+				const { origin, source, column, line, componentName } = parsedSource;
 				let reference: vscode.Uri | null = null;
 				if (source.type === 'URL') {
 					reference = await this.resolveRelativeReference(source.relativePath);
@@ -133,8 +133,7 @@ export class DevtoolsSession extends vscode.Disposable {
 				);
 
 				let range = fullRange;
-
-				if (parsedSource.symbolicated) {
+				if (origin === InfoOrigin.Tag || origin === InfoOrigin.DevtoolsSymbolicated) {
 					const fileArrayBuffer = await vscode.workspace.fs.readFile(reference);
 					const fileString = fileArrayBuffer.toString().replace(/\\n/g, '\n');
 					const fullRange = await findTsxNodeAtLine(fileString, line);
@@ -145,10 +144,12 @@ export class DevtoolsSession extends vscode.Disposable {
 						new vscode.Position(endLine, 9999999),
 					);
 				}
-				return new vscode.Location(
+				const location = new vscode.Location(
 					reference,
 					range
 				);
+
+				return { location, componentName };
 			} else {
 				return null;
 			}
@@ -218,7 +219,7 @@ export class ReactDevtoolsManager extends vscode.Disposable {
 	private _onActiveSessionStatusChange = new vscode.EventEmitter<DevtoolsStatus>();
 	onActiveSessionStatusChange = this._onActiveSessionStatusChange.event;
 
-	private _onActiveSessionInspectedElementChange = new vscode.EventEmitter<vscode.Location | null>();
+	private _onActiveSessionInspectedElementChange = new vscode.EventEmitter<InspectionResult | null>();
 	onActiveSessionInspectedElementChange = this._onActiveSessionInspectedElementChange.event;
 
 	private _onActiveSessionInspectHostChange = new vscode.EventEmitter<boolean>();

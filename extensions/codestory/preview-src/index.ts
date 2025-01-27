@@ -49,6 +49,20 @@ window.addEventListener('message', (e) => {
 	}
 });
 
+function getInputValue(url: URL) {
+	const displayLocation = new URL(url);
+	const port = url.port;
+	const activeSession = settings.sessions[port];
+	if (activeSession) {
+		displayLocation.port = activeSession.toString();
+	}
+
+	if (displayLocation.searchParams.has('vscodeBrowserReqId')) {
+		displayLocation.searchParams.delete('vscodeBrowserReqId');
+	}
+	return displayLocation.href;
+}
+
 onceDocumentLoaded(() => {
 	setInterval(() => {
 		const iframeFocused = document.activeElement?.tagName === 'IFRAME';
@@ -59,14 +73,7 @@ onceDocumentLoaded(() => {
 		window.addEventListener('message', (event) => {
 			if (event.isTrusted && event.data.type === 'location-change') {
 				const newLocation = new URL(event.data.location);
-				const previousUrl = new URL(settings.url);
-				const originalUrl = new URL(settings.originalUrl);
-				if (newLocation.host === previousUrl.host) {
-					originalUrl.pathname = newLocation.pathname;
-					originalUrl.search = newLocation.search;
-					originalUrl.hash = newLocation.hash;
-					input.value = originalUrl.href;
-				}
+				input.value = getInputValue(newLocation);
 			}
 		});
 	});
@@ -103,7 +110,7 @@ onceDocumentLoaded(() => {
 	});
 
 	navigateTo(settings.url, true);
-	input.value = settings.originalUrl;
+	input.value = getInputValue(new URL(settings.url));
 
 	toggleFocusLockIndicatorEnabled(settings.focusLockIndicatorEnabled);
 

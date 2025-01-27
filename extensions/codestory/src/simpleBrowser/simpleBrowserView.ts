@@ -12,9 +12,11 @@ function generateId() {
 	return crypto.randomBytes(16).toString('hex');
 }
 
+export type Metadata = Record<string, any>;
+
 export interface ShowOptions {
 	readonly preserveFocus?: boolean;
-	readonly originalUrl?: string;
+	readonly metadata?: Metadata;
 	readonly viewColumn?: vscode.ViewColumn;
 	readonly inPreview: boolean;
 }
@@ -28,7 +30,7 @@ const protocols = ['http', 'https'];
 
 export type UrlChangePayload = {
 	url: string;
-	originalUrl?: string;
+	metadata?: Metadata;
 };
 
 
@@ -72,23 +74,23 @@ export class SimpleBrowserView extends Disposable {
 			retainContextWhenHidden: true,
 			...SimpleBrowserView.getWebviewOptions(extensionUri)
 		});
-		return new SimpleBrowserView(extensionUri, url, webview, showOptions?.originalUrl);
+		return new SimpleBrowserView(extensionUri, url, webview, showOptions?.metadata);
 	}
 
 	public static restore(
 		extensionUri: vscode.Uri,
 		url: string,
 		webviewPanel: vscode.WebviewPanel,
-		originalUrl?: string,
+		metadata?: Metadata,
 	): SimpleBrowserView {
-		return new SimpleBrowserView(extensionUri, url, webviewPanel, originalUrl);
+		return new SimpleBrowserView(extensionUri, url, webviewPanel, metadata);
 	}
 
 	private constructor(
 		private readonly extensionUri: vscode.Uri,
 		url: string,
 		webviewPanel: vscode.WebviewPanel,
-		originalUrl?: string,
+		metadata?: Metadata,
 	) {
 		super();
 
@@ -114,7 +116,7 @@ export class SimpleBrowserView extends Disposable {
 			this.dispose();
 		}));
 
-		this.show(url, { originalUrl, inPreview: true });
+		this.show(url, { metadata, inPreview: true });
 	}
 
 	public override dispose() {
@@ -123,11 +125,11 @@ export class SimpleBrowserView extends Disposable {
 	}
 
 	public show(url: string, options?: ShowOptions) {
-		this._webviewPanel.webview.html = this.getHtml(url, options?.originalUrl);
+		this._webviewPanel.webview.html = this.getHtml(url, options?.metadata);
 		this._webviewPanel.reveal(options?.viewColumn, options?.preserveFocus, options?.inPreview);
 	}
 
-	private getHtml(url: string, originalUrl?: string) {
+	private getHtml(url: string, metadata?: Metadata) {
 		const mainJs = this.extensionResourceUrl('media', 'index.js');
 		const mainCss = this.extensionResourceUrl('media', 'index.css');
 		const codiconsUri = this.extensionResourceUrl('media', 'codicon.css');
@@ -143,10 +145,12 @@ export class SimpleBrowserView extends Disposable {
 			}
 		}
 
-		const settingsData: Record<string, string> = { url };
+		const settingsData: Record<string, any> = { url };
 
-		if (originalUrl) {
-			settingsData.originalUrl = originalUrl;
+		if (metadata) {
+			for (const [key, value] of Object.entries(metadata)) {
+				settingsData[key] = value;
+			}
 		}
 
 		return /* html */ `<!DOCTYPE html>

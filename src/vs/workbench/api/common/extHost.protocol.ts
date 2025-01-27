@@ -55,7 +55,7 @@ import { IRevealOptions, ITreeItem, IViewBadge } from '../../common/views.js';
 import { ChatAgentLocation as AideAgentLocation } from '../../contrib/aideAgent/common/aideAgentAgents.js';
 import { IChatProgressResponseContent as IAideAgentProgressResponseContent } from '../../contrib/aideAgent/common/aideAgentModel.js';
 import { IAideAgentPlanStep, IAideAgentProgressStage, IChatCodeEdit, IChatEndResponse, IAideAgentToolTypeError } from '../../contrib/aideAgent/common/aideAgentService.js';
-import { DevtoolsStatus } from '../../contrib/aideAgent/common/devtoolsService.js';
+import { DevtoolsStatus, InspectionResult } from '../../contrib/aideAgent/common/devtoolsService.js';
 import { SidecarDownloadStatus, SidecarRunningStatus } from '../../contrib/aideAgent/common/sidecarService.js';
 import { CallHierarchyItem } from '../../contrib/callHierarchy/common/callHierarchy.js';
 import { ChatAgentLocation, IChatAgentMetadata, IChatAgentRequest, IChatAgentResult, IChatWelcomeMessageContent } from '../../contrib/chat/common/chatAgents.js';
@@ -3065,7 +3065,7 @@ export interface ExtHostDevtoolsShape {
 }
 
 export interface MainThreadDevtoolsShape {
-	$setLatestPayload(payload: Dto<languages.Location> | null): void;
+	$setLatestPayload(payload: Dto<InspectionResult> | null): void;
 	$setStatus(status: DevtoolsStatus): void;
 	$setIsInspecting(isInspecting: boolean): void;
 }

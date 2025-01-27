@@ -166,6 +166,8 @@ export class Workbench extends Layout {
 				// Layout
 				this.layout();
 
+				this.addPreview();
+
 				// Restore
 				this.restore(lifecycleService);
 			});

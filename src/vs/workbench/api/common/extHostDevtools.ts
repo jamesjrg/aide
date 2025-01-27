@@ -7,7 +7,6 @@ import type * as vscode from 'vscode';
 import { ExtHostDevtoolsShape, IMainContext, MainContext, MainThreadDevtoolsShape } from './extHost.protocol.js';
 import { DevtoolsState } from './extHostTypeConverters.js';
 import { Emitter } from '../../../base/common/event.js';
-import * as extHostTypes from './extHostTypes.js';
 import * as typeConvert from './extHostTypeConverters.js';
 
 export class ExtHostDevtools implements ExtHostDevtoolsShape {
@@ -34,16 +33,13 @@ export class ExtHostDevtools implements ExtHostDevtoolsShape {
 		this._proxy.$setIsInspecting(isInspecting);
 	}
 
-	setLatestPayload(payload: vscode.Location | null) {
+	setLatestPayload(payload: vscode.InspectionResult | null) {
 		if (payload) {
-			const range = new extHostTypes.Range(payload.range.start, payload.range.end);
-			const location = new extHostTypes.Location(payload.uri, range);
-			const dto = typeConvert.Location.from(location);
+			const dto = typeConvert.DevtoolsInspectionResult.from(payload);
 			this._proxy.$setLatestPayload(dto);
 		} else {
 			this._proxy.$setLatestPayload(null);
 		}
-
 	}
 
 	$startInspectingHost(): void {

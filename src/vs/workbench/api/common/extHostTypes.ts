@@ -4952,6 +4952,11 @@ export enum DevtoolsStatus {
 	Idle = 'idle'
 }
 
+export type InspectionResult = {
+	location: vscode.Location;
+	componentName?: string;
+};
+
 //#endregion
 
 //#region ai

@@ -2,6 +2,7 @@
  *  Copyright (c) Microsoft Corporation. All rights reserved.
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
+import * as vscode from 'vscode';
 
 export enum DevtoolsStatus {
 	ServerConnected = 'server-connected',
@@ -77,11 +78,28 @@ export type InspectElementError = {
 	stack?: string;
 };
 
+export enum InfoOrigin {
+	DevtoolsSimple = 'devtools/simple',
+	DevtoolsSymbolicated = 'devtools/symbolicated',
+	Tag = 'tag'
+}
+
+export type InfoOriginType = `${InfoOrigin}`;
+
 export type ParsedSource = {
-	symbolicated: boolean;
+	origin: InfoOriginType;
 	source: ParsedSourceData;
+	componentName?: string;
 	line: number;
 	column: number;
+};
+
+/**
+ * What is actually sent to IDE
+ */
+export type InspectionResult = {
+	location: vscode.Location;
+	componentName?: string;
 };
 
 export type InspectElementParsedFullData = {

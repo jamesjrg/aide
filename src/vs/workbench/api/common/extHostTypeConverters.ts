@@ -62,7 +62,7 @@ import { IChatResponseTextPart, IChatResponsePromptTsxPart } from '../../contrib
 import { LanguageModelTextPart, LanguageModelPromptTsxPart } from './extHostTypes.js';
 import { MarshalledId } from '../../../base/common/marshallingIds.js';
 import { IChatRequestDraft } from '../../contrib/chat/common/chatEditingService.js';
-import { DevtoolsStatus } from '../../contrib/aideAgent/common/devtoolsService.js';
+import { DevtoolsStatus, InspectionResult } from '../../contrib/aideAgent/common/devtoolsService.js';
 import { AgentMode } from '../../../platform/aideAgent/common/model.js';
 
 export namespace Command {
@@ -3226,8 +3226,18 @@ export namespace DevtoolsState {
 	}
 }
 
-export namespace ReactDevtoolsPayload {
-
+export namespace DevtoolsInspectionResult {
+	export function from(payload: types.InspectionResult): Dto<InspectionResult> {
+		const range = new types.Range(
+			payload.location.range.start,
+			payload.location.range.end
+		);
+		const location = new types.Location(payload.location.uri, range);
+		return {
+			location: Location.from(location),
+			componentName: payload.componentName
+		};
+	}
 }
 
 export namespace TerminalQuickFix {

@@ -301,7 +301,14 @@ export async function activate(context: vscode.ExtensionContext) {
 			const proxyedPort = await reactDevtoolsManager.startOrGetSession(Number(parsedUrl.port));
 			const proxyedUrl = new URL(parsedUrl);
 			proxyedUrl.port = proxyedPort.toString();
-			simpleBrowserManager.show(proxyedUrl.href, { originalUrl: url, inPreview: true });
+
+
+			const sessions: Record<number, number> = {};
+			for (const [port, session] of reactDevtoolsManager.sessions.entries()) {
+				sessions[session.proxyPort!] = port;
+			}
+
+			simpleBrowserManager.show(proxyedUrl.href, { metadata: { sessions }, inPreview: true });
 			// TODO(@g-danna) Make dedicated service to keep these nicely in sync?
 			vscode.commands.executeCommand('workbench.action.showPreview');
 		} catch (err) {
@@ -312,18 +319,8 @@ export async function activate(context: vscode.ExtensionContext) {
 	const simpleBrowserManager = new SimpleBrowserManager(context.extensionUri);
 	context.subscriptions.push(simpleBrowserManager);
 
-	context.subscriptions.push(simpleBrowserManager.onUrlChange(async ({ url }) => {
-
-		const parsed = new URL(url);
-		const portNumber = Number(parsed.port);
-		if (reactDevtoolsManager.sessions.has(portNumber)) {
-			const activeSession = reactDevtoolsManager.sessions.get(portNumber)!;
-			if (activeSession.proxyPort !== undefined) {
-				parsed.port = activeSession.proxyPort.toString();
-			}
-		}
-		openUrl(parsed.href);
-
+	context.subscriptions.push(simpleBrowserManager.onUrlChange(({ url }) => {
+		openUrl(url);
 	}));
 
 	context.subscriptions.push(simpleBrowserManager);
