@@ -119,11 +119,6 @@
           "default": false,
           "description": "If the sidecar-binary is being run on its own, we can set this to true allowing for rapid proto-typing"
         },
-        "aide.enableInspectWithDevtools": {
-          "type": "boolean",
-          "default": false,
-          "description": "Opt-in for this experimental feature that allows you to point and click on your React component to inspect them"
-        },
         "aide.inlineCompletion.triggerMode": {
           "type": "string",
           "default": "automatic",
