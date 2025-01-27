@@ -29,6 +29,7 @@ import { IWorkspaceContextService } from '../../../../platform/workspace/common/
 import { IFileQuery, ISearchService, QueryType } from '../../../services/search/common/search.js';
 import { CancellationToken } from '../../../../base/common/cancellation.js';
 import { IPreviewPartService } from '../../../services/previewPart/browser/previewPartService.js';
+import { getWindow } from '../../../../base/browser/dom.js';
 
 export class DevtoolsService extends Disposable implements IDevtoolsService {
 	declare _serviceBrand: undefined;
@@ -56,7 +57,7 @@ export class DevtoolsService extends Disposable implements IDevtoolsService {
 
 	set status(status: DevtoolsStatus) {
 		this._status.set(status);
-		this.notifyStatusChange();
+		this.onStatusChange();
 	}
 
 	private _latestPayload: Location | null | undefined;
@@ -184,7 +185,7 @@ export class DevtoolsService extends Disposable implements IDevtoolsService {
 	}
 
 
-	private notifyStatusChange() {
+	private onStatusChange() {
 		const isDevelopment = !this.environmentService.isBuilt || this.environmentService.isExtensionDevelopment;
 		if (isDevelopment) {
 			console.log('Devtools service status: ', this.status);
@@ -195,6 +196,23 @@ export class DevtoolsService extends Disposable implements IDevtoolsService {
 			widget.input.setMode(AgentMode.Agentic);
 		}
 		this._onDidChangeStatus.fire(this.status);
+	}
+
+	private async attachScreenshot() {
+		const screenshot = await this.hostService.getScreenshot();
+		const widget = this.getWidget();
+		if (screenshot) {
+			const previewClientRect = this.previewPartService.getBoundingClientRect();
+			const pixelRatio = getWindow(this.previewPartService.mainPart.element).devicePixelRatio;
+			const cropRectangle: CropRectangle = {
+				x: previewClientRect.left * pixelRatio,
+				y: previewClientRect.top * pixelRatio,
+				width: previewClientRect.width * pixelRatio,
+				height: previewClientRect.height * pixelRatio
+			};
+			const croppedScreenShot = await cropImage(screenshot, cropRectangle);
+			widget.attachmentModel.addContext(convertBufferToScreenshotVariable(croppedScreenShot));
+		}
 	}
 
 
@@ -213,6 +231,7 @@ export class DevtoolsService extends Disposable implements IDevtoolsService {
 		}
 
 		if (payload === null) {
+			this.attachScreenshot();
 			this.notifyProjectNotSupported();
 		} else if (widget.viewModel?.model) {
 			widget.viewModel.model.isDevtoolsContext = true;
@@ -242,18 +261,7 @@ export class DevtoolsService extends Disposable implements IDevtoolsService {
 			// Add leading space if we are not at the very beginning of the text model
 			const output = isLeading ? displayName : ' ' + displayName;
 
-			const screenshot = await this.hostService.getScreenshot();
-
-
-
-
-			if (screenshot) {
-				const previewBoundingClientRect = this.previewPartService.getBoundingClientRect();
-				const croppedScreenShot = await cropImage(screenshot, previewBoundingClientRect);
-				widget.attachmentModel.addContext(convertBufferToScreenshotVariable(croppedScreenShot));
-			}
-
-
+			this.attachScreenshot();
 
 			const success = input.executeEdits('addReactComponentSource', [{ range: replaceRange, text: output }]);
 			if (success) {
@@ -270,6 +278,7 @@ export class DevtoolsService extends Disposable implements IDevtoolsService {
 				dynamicVariablesModel.addReference(variable);
 				input.focus();
 			}
+
 		}
 	}
 
@@ -304,7 +313,7 @@ export class DevtoolsService extends Disposable implements IDevtoolsService {
 
 
 
-type CropRectangle = {
+export type CropRectangle = {
 	x: number;
 	y: number;
 	width: number;
@@ -316,8 +325,6 @@ async function cropImage(buffer: ArrayBufferLike, cropRectangle: CropRectangle):
 	const originalBlob = new Blob([buffer]);
 	const url = URL.createObjectURL(originalBlob);
 	const img = await createImage(url);
-	// Clean up
-	URL.revokeObjectURL(url);
 
 	const canvas = document.createElement('canvas');
 	const ctx = canvas.getContext('2d');
@@ -339,7 +346,12 @@ async function cropImage(buffer: ArrayBufferLike, cropRectangle: CropRectangle):
 		cropRectangle.width, cropRectangle.height // Width and height of destination rectangle
 	);
 
-	return originalBlob.arrayBuffer();
+	// Clean up
+	URL.revokeObjectURL(url);
+
+	const newBlob = await canvasToBlob(canvas);
+
+	return newBlob.arrayBuffer();
 }
 
 function createImage(src: string): Promise<HTMLImageElement> {
@@ -352,7 +364,7 @@ function createImage(src: string): Promise<HTMLImageElement> {
 		img.src = src;
 	});
 }
-/*
+
 
 function canvasToBlob(canvas: HTMLCanvasElement): Promise<Blob> {
 	return new Promise((resolve, reject) => {
@@ -368,4 +380,4 @@ function canvasToBlob(canvas: HTMLCanvasElement): Promise<Blob> {
 		);
 	});
 }
-*/
+
