@@ -273,14 +273,13 @@ export type CropRectangle = {
 };
 
 async function cropImage(buffer: ArrayBufferLike, cropRectangle: CropRectangle): Promise<ArrayBufferLike> {
-
-	const originalBlob = new Blob([buffer]);
+	// Create blob with JPEG type
+	const originalBlob = new Blob([buffer], { type: 'image/jpeg' });
 	const url = URL.createObjectURL(originalBlob);
 	const img = await createImage(url);
 
 	const canvas = document.createElement('canvas');
-	const ctx = canvas.getContext('2d');
-
+	const ctx = canvas.getContext('2d', { alpha: false }); // JPEG doesn't support alpha
 	if (!ctx) {
 		throw new Error('Failed to get canvas context');
 	}
@@ -289,20 +288,23 @@ async function cropImage(buffer: ArrayBufferLike, cropRectangle: CropRectangle):
 	canvas.width = cropRectangle.width;
 	canvas.height = cropRectangle.height;
 
+	// Set white background (since JPEG doesn't support transparency)
+	ctx.fillStyle = '#FFFFFF';
+	ctx.fillRect(0, 0, canvas.width, canvas.height);
+
 	// Draw the cropped portion
 	ctx.drawImage(
 		img,
-		cropRectangle.x, cropRectangle.y,  // Start at this point
-		cropRectangle.width, cropRectangle.height, // Width and height of source rectangle
-		0, 0, // Place at canvas origin
-		cropRectangle.width, cropRectangle.height // Width and height of destination rectangle
+		Math.round(cropRectangle.x), Math.round(cropRectangle.y),          // Start at this point
+		Math.round(cropRectangle.width), Math.round(cropRectangle.height), // Width and height of source rectangle
+		0, 0,                                                              // Place at canvas origin
+		Math.round(cropRectangle.width), Math.round(cropRectangle.height)  // Width and height of destination rectangle
 	);
 
 	// Clean up
 	URL.revokeObjectURL(url);
 
 	const newBlob = await canvasToBlob(canvas);
-
 	return newBlob.arrayBuffer();
 }
 
@@ -317,9 +319,8 @@ function createImage(src: string): Promise<HTMLImageElement> {
 	});
 }
 
-
 function canvasToBlob(canvas: HTMLCanvasElement): Promise<Blob> {
-	return new Promise((resolve, reject) => {
+	return new Promise<Blob>((resolve, reject) => {
 		canvas.toBlob(
 			(blob) => {
 				if (blob) {
@@ -328,8 +329,8 @@ function canvasToBlob(canvas: HTMLCanvasElement): Promise<Blob> {
 					reject(new Error('Failed to create blob'));
 				}
 			},
-			'image/png'  // or 'image/jpeg', etc.
+			'image/jpeg',
+			0.95  // High quality JPEG
 		);
 	});
 }
-
