@@ -16,7 +16,6 @@ import { Location } from '../../../../editor/common/languages.js';
 import { IFileService } from '../../../../platform/files/common/files.js';
 import { URI } from '../../../../base/common/uri.js';
 import { IEnvironmentService } from '../../../../platform/environment/common/environment.js';
-import { IConfigurationService } from '../../../../platform/configuration/common/configuration.js';
 import { ChatDynamicVariableModel } from './contrib/aideAgentDynamicVariables.js';
 import { IDynamicVariable } from '../common/aideAgentVariables.js';
 import { localize } from '../../../../nls.js';
@@ -97,7 +96,6 @@ export class DevtoolsService extends Disposable implements IDevtoolsService {
 		@IViewsService private readonly viewsService: IViewsService,
 		@IFileService private readonly fileService: IFileService,
 		@IEnvironmentService private readonly environmentService: IEnvironmentService,
-		@IConfigurationService private readonly configurationService: IConfigurationService,
 		@INotificationService private readonly notificationService: INotificationService,
 		@IOpenerService private readonly openerService: IOpenerService,
 		@IHostService private readonly hostService: IHostService,
@@ -110,25 +108,11 @@ export class DevtoolsService extends Disposable implements IDevtoolsService {
 		this._status = CONTEXT_DEVTOOLS_STATUS.bindTo(this.contextKeyService);
 		this._isInspecting = CONTEXT_IS_INSPECTING_HOST.bindTo(this.contextKeyService);
 		this._isFeatureEnabled = CONTEXT_IS_DEVTOOLS_FEATURE_ENABLED.bindTo(this.contextKeyService);
-
-		// Check current state of your config at startup:
-		this.updateConfig();
-
-		// Subscribe to config changes:
-		this._register(
-			this.configurationService.onDidChangeConfiguration(e => {
-				if (e.affectsConfiguration('aide')) {
-					this.updateConfig();
-				}
-			})
-		);
 	}
 
 	async initialize() {
 		const isReactProject = await this.hasReactDependencyInAnyPackageJson();
-		if (isReactProject) {
-			this.configurationService.updateValue('aide.enableInspectWithDevtools', true);
-		}
+		this._isFeatureEnabled.set(isReactProject);
 	}
 
 	private async hasReactDependencyInAnyPackageJson(): Promise<boolean> {
@@ -175,13 +159,6 @@ export class DevtoolsService extends Disposable implements IDevtoolsService {
 			throw new Error(`Chat view pane must be initialized before calling the Devtools service`);
 		}
 		return chatViewPane.widget;
-	}
-
-
-	private updateConfig(): void {
-		// Read the configuration value:
-		const isEnabled = !!this.configurationService.getValue<boolean>('aide.enableInspectWithDevtools');
-		this._isFeatureEnabled.set(isEnabled);
 	}
 
 
