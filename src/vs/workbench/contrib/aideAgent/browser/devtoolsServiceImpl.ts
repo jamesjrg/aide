@@ -3,32 +3,28 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
+import { getWindow } from '../../../../base/browser/dom.js';
+import { CancellationToken } from '../../../../base/common/cancellation.js';
 import { Emitter } from '../../../../base/common/event.js';
 import { Disposable } from '../../../../base/common/lifecycle.js';
+import { URI } from '../../../../base/common/uri.js';
+import { Location } from '../../../../editor/common/languages.js';
+import { AgentMode } from '../../../../platform/aideAgent/common/model.js';
 import { IContextKey, IContextKeyService } from '../../../../platform/contextkey/common/contextkey.js';
-import { ChatViewId } from './aideAgent.js';
-
+import { IEnvironmentService } from '../../../../platform/environment/common/environment.js';
+import { IFileService } from '../../../../platform/files/common/files.js';
+import { IWorkspaceContextService } from '../../../../platform/workspace/common/workspace.js';
+import { IHostService } from '../../../services/host/browser/host.js';
+import { IPreviewPartService } from '../../../services/previewPart/browser/previewPartService.js';
+import { IFileQuery, ISearchService, QueryType } from '../../../services/search/common/search.js';
+import { IViewsService } from '../../../services/views/common/viewsService.js';
+import { IDynamicVariable } from '../common/aideAgentVariables.js';
 import { DevtoolsStatus, IDevtoolsService } from '../common/devtoolsService.js';
 import { CONTEXT_DEVTOOLS_STATUS, CONTEXT_IS_DEVTOOLS_FEATURE_ENABLED, CONTEXT_IS_INSPECTING_HOST } from '../common/devtoolsServiceContextKeys.js';
-import { IViewsService } from '../../../services/views/common/viewsService.js';
+import { ChatViewId } from './aideAgent.js';
 import { ChatViewPane } from './aideAgentViewPane.js';
-import { Location } from '../../../../editor/common/languages.js';
-import { IFileService } from '../../../../platform/files/common/files.js';
-import { URI } from '../../../../base/common/uri.js';
-import { IEnvironmentService } from '../../../../platform/environment/common/environment.js';
 import { ChatDynamicVariableModel } from './contrib/aideAgentDynamicVariables.js';
-import { IDynamicVariable } from '../common/aideAgentVariables.js';
-import { localize } from '../../../../nls.js';
-import { INotificationService, Severity } from '../../../../platform/notification/common/notification.js';
-import { IOpenerService } from '../../../../platform/opener/common/opener.js';
-import { AgentMode } from '../../../../platform/aideAgent/common/model.js';
-import { IHostService } from '../../../services/host/browser/host.js';
 import { convertBufferToScreenshotVariable } from './contrib/screenshot.js';
-import { IWorkspaceContextService } from '../../../../platform/workspace/common/workspace.js';
-import { IFileQuery, ISearchService, QueryType } from '../../../services/search/common/search.js';
-import { CancellationToken } from '../../../../base/common/cancellation.js';
-import { IPreviewPartService } from '../../../services/previewPart/browser/previewPartService.js';
-import { getWindow } from '../../../../base/browser/dom.js';
 
 export class DevtoolsService extends Disposable implements IDevtoolsService {
 	declare _serviceBrand: undefined;
@@ -96,8 +92,6 @@ export class DevtoolsService extends Disposable implements IDevtoolsService {
 		@IViewsService private readonly viewsService: IViewsService,
 		@IFileService private readonly fileService: IFileService,
 		@IEnvironmentService private readonly environmentService: IEnvironmentService,
-		@INotificationService private readonly notificationService: INotificationService,
-		@IOpenerService private readonly openerService: IOpenerService,
 		@IHostService private readonly hostService: IHostService,
 		@IWorkspaceContextService private readonly workspaceContextService: IWorkspaceContextService,
 		@ISearchService private readonly searchService: ISearchService,
@@ -209,7 +203,6 @@ export class DevtoolsService extends Disposable implements IDevtoolsService {
 
 		if (payload === null) {
 			this.attachScreenshot();
-			this.notifyProjectNotSupported();
 		} else if (widget.viewModel?.model) {
 			widget.viewModel.model.isDevtoolsContext = true;
 
@@ -257,24 +250,6 @@ export class DevtoolsService extends Disposable implements IDevtoolsService {
 			}
 
 		}
-	}
-
-	private notifyProjectNotSupported() {
-		this.notificationService.prompt(
-			Severity.Info,
-			localize('aide.devtools.unsupportedProject', 'Your project doesn\'t seem to support React devtooling. You need to client render and have source maps enabled.'),
-			[
-				{
-					label: localize('aide.devtools.openDocumentation', 'Open documentation'),
-					run: () => {
-						// Construct the external URI to open
-						const externalUri = URI.parse('https://docs.aide.dev/experimental/react-devtools/#how-to-use');
-						// Use the opener service to open it in the user's browser
-						this.openerService.open(externalUri).catch(console.error);
-					}
-				}
-			]
-		);
 	}
 
 	startInspectingHost(): void {
