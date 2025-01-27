@@ -8,7 +8,7 @@ import { ShowOptions, SimpleBrowserView, UrlChangePayload } from './simpleBrowse
 
 type WebViewState = {
 	url: string;
-	originalUrl: string;
+	sessions: Record<number, number>;
 };
 
 export class SimpleBrowserManager extends vscode.Disposable {
@@ -49,7 +49,7 @@ export class SimpleBrowserManager extends vscode.Disposable {
 	}
 
 	public restore(panel: vscode.WebviewPanel, state: WebViewState): void {
-		const view = SimpleBrowserView.restore(this.extensionUri, state.url, panel, state.originalUrl);
+		const view = SimpleBrowserView.restore(this.extensionUri, state.url, panel, state.sessions);
 		this.registerWebviewListeners(view);
 		this._activeView ??= view;
 	}

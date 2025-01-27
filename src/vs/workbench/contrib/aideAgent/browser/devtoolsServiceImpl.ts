@@ -8,11 +8,10 @@ import { Disposable } from '../../../../base/common/lifecycle.js';
 import { IContextKey, IContextKeyService } from '../../../../platform/contextkey/common/contextkey.js';
 import { ChatViewId } from './aideAgent.js';
 
-import { DevtoolsStatus, IDevtoolsService } from '../common/devtoolsService.js';
+import { DevtoolsStatus, IDevtoolsService, InspectionResult } from '../common/devtoolsService.js';
 import { CONTEXT_DEVTOOLS_STATUS, CONTEXT_IS_DEVTOOLS_FEATURE_ENABLED, CONTEXT_IS_INSPECTING_HOST } from '../common/devtoolsServiceContextKeys.js';
 import { IViewsService } from '../../../services/views/common/viewsService.js';
 import { ChatViewPane } from './aideAgentViewPane.js';
-import { Location } from '../../../../editor/common/languages.js';
 import { IFileService } from '../../../../platform/files/common/files.js';
 import { URI } from '../../../../base/common/uri.js';
 import { IEnvironmentService } from '../../../../platform/environment/common/environment.js';
@@ -59,12 +58,12 @@ export class DevtoolsService extends Disposable implements IDevtoolsService {
 		this.onStatusChange();
 	}
 
-	private _latestPayload: Location | null | undefined;
+	private _latestPayload: InspectionResult | null | undefined;
 	get latestPayload() {
 		return this._latestPayload;
 	}
 
-	set latestPayload(payload: Location | null | undefined) {
+	set latestPayload(payload: InspectionResult | null | undefined) {
 		this._latestPayload = payload;
 	}
 
@@ -193,7 +192,7 @@ export class DevtoolsService extends Disposable implements IDevtoolsService {
 	}
 
 
-	private async addReference(payload: Location | null) {
+	private async addReference(payload: InspectionResult | null) {
 		const widget = this.getWidget();
 		const input = widget.inputEditor;
 		const inputModel = input.getModel();
@@ -213,8 +212,8 @@ export class DevtoolsService extends Disposable implements IDevtoolsService {
 		} else if (widget.viewModel?.model) {
 			widget.viewModel.model.isDevtoolsContext = true;
 
-			const file = await this.fileService.stat(payload.uri);
-			const displayName = `@${file.name}:${payload.range.startLineNumber}-${payload.range.endLineNumber}`;
+			const file = await this.fileService.stat(payload.location.uri);
+			const displayName = `@${payload.componentName || file.name}:${payload.location.range.startLineNumber}-${payload.location.range.endLineNumber}`;
 			const inputModelFullRange = inputModel.getFullModelRange();
 			// By default, append to the end of the model
 			let replaceRange = {
@@ -250,7 +249,7 @@ export class DevtoolsService extends Disposable implements IDevtoolsService {
 						startColumn: replaceRange.startColumn + (isLeading ? 0 : 1),
 						endColumn: replaceRange.endColumn + displayName.length + (isLeading ? 0 : 1),
 					},
-					data: { uri: payload.uri, range: payload.range }
+					data: { uri: payload.location.uri, range: payload.location.range }
 				};
 				dynamicVariablesModel.addReference(variable);
 				input.focus();

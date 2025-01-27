@@ -1635,6 +1635,26 @@ export abstract class Layout extends Disposable implements IWorkbenchLayoutServi
 
 			this.stateModel.save(true, true);
 		}));
+
+	}
+
+	addPreview() {
+		// Add preview
+		try {
+			const editorParentElement = this.editorPartView.element.parentElement;
+			if (editorParentElement) {
+				// Should this be append?
+				editorParentElement.prepend(this.previewPartView.element);
+			}
+			this.arrangePreviewOverlay();
+			this.setPreviewHidden(true);
+			this._register(this.editorPartView.onDidContentSizeChange(() => {
+				this.arrangePreviewOverlay();
+			}));
+
+		} catch (error) {
+			console.error(`Could not initialize Aide controls: ${error}`);
+		}
 	}
 
 	layout(): void {
@@ -1651,23 +1671,6 @@ export abstract class Layout extends Disposable implements IWorkbenchLayoutServi
 			// Layout the grid widget
 			this.workbenchGrid.layout(this._mainContainerDimension.width, this._mainContainerDimension.height);
 			this.initialized = true;
-
-			// Add preview
-			try {
-				const editorParentElement = this.editorPartView.element.parentElement;
-				if (editorParentElement) {
-					// Should this be append?
-					editorParentElement.prepend(this.previewPartView.element);
-				}
-				this.arrangePreviewOverlay();
-				this.setPreviewHidden(true);
-				this._register(this.editorPartView.onDidContentSizeChange(() => {
-					this.arrangePreviewOverlay();
-				}));
-
-			} catch (error) {
-				console.error(`Could not initialize Aide controls: ${error}`);
-			}
 
 			// Emit as event
 			this.handleContainerDidLayout(this.mainContainer, this._mainContainerDimension);

@@ -18,7 +18,7 @@ export interface IDevtoolsService {
 	onDidTriggerInspectingHostStart: Event<void>;
 	onDidTriggerInspectingHostStop: Event<void>;
 	isInspecting: boolean;
-	latestPayload: Location | null | undefined;
+	latestPayload: InspectionResult | null | undefined;
 	latestResource: URI | undefined;
 }
 
@@ -28,6 +28,11 @@ export enum DevtoolsStatus {
 	Error = 'error',
 	Idle = 'idle'
 }
+
+export type InspectionResult = {
+	location: Location;
+	componentName?: string;
+};
 
 export type DevtoolsStatusType = `${DevtoolsStatus}`;
 
