@@ -3066,6 +3066,7 @@ export interface MainThreadSidecarShape extends IDisposable {
 export interface ExtHostDevtoolsShape {
 	$stopInspectingHost(): void;
 	$startInspectingHost(): void;
+	$inspectingClearOverlays(): void;
 }
 
 export interface MainThreadDevtoolsShape {

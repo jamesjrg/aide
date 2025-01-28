@@ -1650,6 +1650,10 @@ export function createApiFactoryAndRegisterActors(accessor: ServicesAccessor): I
 				checkProposedApiEnabled(extension, 'devtools');
 				return _asExtensionEvent(extHostDevtools.onDidTriggerInspectingHostStop)(listener, thisArgs, disposables);
 			},
+			onDidTriggerInspectingClearOverlays: function (listener, thisArgs?, disposables?) {
+				checkProposedApiEnabled(extension, 'devtools');
+				return _asExtensionEvent(extHostDevtools.onDidInspectingClearOverlays)(listener, thisArgs, disposables);
+			}
 		};
 
 		// namespace: devtools

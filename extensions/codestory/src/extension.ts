@@ -294,6 +294,9 @@ export async function activate(context: vscode.ExtensionContext) {
 		reactDevtoolsManager.stopInspectingHost();
 	});
 
+	vscode.devtools.onDidTriggerInspectingClearOverlays(() => {
+		reactDevtoolsManager.inspectingClearOverlays();
+	});
 
 	async function openUrl(url: string) {
 		try {
@@ -316,7 +319,12 @@ export async function activate(context: vscode.ExtensionContext) {
 		}
 	}
 
-	const simpleBrowserManager = new SimpleBrowserManager(context.extensionUri);
+	const simpleBrowserManager = new SimpleBrowserManager(
+		context.extensionUri,
+		() => {
+			reactDevtoolsManager.inspectingClearOverlays();
+		}
+	);
 	context.subscriptions.push(simpleBrowserManager);
 
 	context.subscriptions.push(simpleBrowserManager.onUrlChange(({ url }) => {

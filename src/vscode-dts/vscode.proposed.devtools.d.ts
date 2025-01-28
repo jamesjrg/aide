@@ -22,5 +22,6 @@ declare module 'vscode' {
 		export function setLatestPayload(payload: InspectionResult | null): void;
 		export const onDidTriggerInspectingHostStart: Event<void>;
 		export const onDidTriggerInspectingHostStop: Event<void>;
+		export const onDidTriggerInspectingClearOverlays: Event<void>;
 	}
 }

@@ -37,6 +37,9 @@ export class DevtoolsService extends Disposable implements IDevtoolsService {
 	private readonly _onDidTriggerInspectingHostStop = this._register(new Emitter<void>());
 	public readonly onDidTriggerInspectingHostStop = this._onDidTriggerInspectingHostStop.event;
 
+	private readonly _onDidInspectingClearOverlays = this._register(new Emitter<void>());
+	public readonly onDidInspectingClearOverlays = this._onDidInspectingClearOverlays.event;
+
 	private _isFeatureEnabled: IContextKey<boolean>;
 
 	private _status: IContextKey<DevtoolsStatus>;
@@ -259,6 +262,15 @@ export class DevtoolsService extends Disposable implements IDevtoolsService {
 	stopInspectingHost(): void {
 		this._isInspecting.set(false);
 		this._onDidTriggerInspectingHostStop.fire();
+		this._onDidInspectingClearOverlays.fire();
+	}
+
+	toggleInspectingHost(): void {
+		if (this._isInspecting.get()) {
+			this.stopInspectingHost();
+		} else {
+			this.startInspectingHost();
+		}
 	}
 }
 

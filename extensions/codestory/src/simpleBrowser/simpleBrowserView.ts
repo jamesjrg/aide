@@ -3,10 +3,10 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import * as vscode from 'vscode';
-import { Disposable } from './dispose';
-import { getNonce } from '../utilities/getNonce';
 import crypto from 'crypto';
+import * as vscode from 'vscode';
+import { getNonce } from '../utilities/getNonce';
+import { Disposable } from './dispose';
 
 function generateId() {
 	return crypto.randomBytes(16).toString('hex');
@@ -64,6 +64,7 @@ export class SimpleBrowserView extends Disposable {
 	public static create(
 		extensionUri: vscode.Uri,
 		url: string,
+		onDidClearOverlays: () => void,
 		showOptions?: ShowOptions
 	): SimpleBrowserView {
 		const webview = vscode.window.createWebviewPanel(SimpleBrowserView.viewType, SimpleBrowserView.title, {
@@ -74,22 +75,24 @@ export class SimpleBrowserView extends Disposable {
 			retainContextWhenHidden: true,
 			...SimpleBrowserView.getWebviewOptions(extensionUri)
 		});
-		return new SimpleBrowserView(extensionUri, url, webview, showOptions?.metadata);
+		return new SimpleBrowserView(extensionUri, url, webview, onDidClearOverlays, showOptions?.metadata);
 	}
 
 	public static restore(
 		extensionUri: vscode.Uri,
 		url: string,
 		webviewPanel: vscode.WebviewPanel,
+		onDidClearOverlays: () => void,
 		metadata?: Metadata,
 	): SimpleBrowserView {
-		return new SimpleBrowserView(extensionUri, url, webviewPanel, metadata);
+		return new SimpleBrowserView(extensionUri, url, webviewPanel, onDidClearOverlays, metadata);
 	}
 
 	private constructor(
 		private readonly extensionUri: vscode.Uri,
 		url: string,
 		webviewPanel: vscode.WebviewPanel,
+		onDidClearOverlays: () => void,
 		metadata?: Metadata,
 	) {
 		super();
@@ -99,6 +102,9 @@ export class SimpleBrowserView extends Disposable {
 
 		this._register(this._webviewPanel.webview.onDidReceiveMessage(e => {
 			switch (e.type) {
+				case 'clearOverlays':
+					onDidClearOverlays();
+					break;
 				case 'openExternal':
 					try {
 						const url = vscode.Uri.parse(e.url);
@@ -157,7 +163,8 @@ export class SimpleBrowserView extends Disposable {
 			<html>
 			<head>
 				<meta http-equiv="Content-type" content="text/html;charset=UTF-8">
-				<meta http-equiv="Content-Security-Policy" content="default-src ${webview.cspSource}; font-src ${webview.cspSource} data: https://*.vscode-cdn.net; img-src ${webview.cspSource} blob: data:; style-src ${webview.cspSource} 'unsafe-inline'; script-src 'self' 'nonce-${nonce}' 'wasm-unsafe-eval'; frame-src 'self' ${frameSrcs}; worker-src 'self' blob:;">
+				<meta http-equiv="Content-Security-Policy"
+					content="default-src ${webview.cspSource}; font-src ${webview.cspSource} data: https://*.vscode-cdn.net; img-src ${webview.cspSource} blob: data:; style-src ${webview.cspSource} 'unsafe-inline'; script-src 'self' 'nonce-${nonce}' 'wasm-unsafe-eval'; frame-src 'self' ${frameSrcs}; worker-src 'self' blob:;">
 				<meta id="simple-browser-settings" data-settings="${escapeAttribute(JSON.stringify(settingsData))}">
 				<link rel="stylesheet" type="text/css" href="${codiconsUri}">
 				<link rel="stylesheet" type="text/css" href="${mainCss}">
@@ -165,25 +172,29 @@ export class SimpleBrowserView extends Disposable {
 			<body>
 				<header class="header">
 					<nav class="controls">
-						<button
-							title="${vscode.l10n.t("Back")}"
-							class="back-button icon"><i class="codicon codicon-arrow-left"></i></button>
+						<button title="${vscode.l10n.t("Back")}" class="back-button icon">
+							<i class="codicon codicon-arrow-left"></i>
+						</button>
 
-						<button
-							title="${vscode.l10n.t("Forward")}"
-							class="forward-button icon"><i class="codicon codicon-arrow-right"></i></button>
+						<button title="${vscode.l10n.t("Forward")}" class="forward-button icon">
+							<i class="codicon codicon-arrow-right"></i>
+						</button>
 
-						<button
-							title="${vscode.l10n.t("Reload")}"
-							class="reload-button icon"><i class="codicon codicon-refresh"></i></button>
+						<button title="${vscode.l10n.t("Reload")}" class="reload-button icon">
+							<i class="codicon codicon-refresh"></i>
+						</button>
 					</nav>
 
 					<input class="url-input" type="text">
 
 					<nav class="controls">
-						<button
-							title="${vscode.l10n.t("Open in browser")}"
-							class="open-external-button icon"><i class="codicon codicon-link-external"></i></button>
+						<button title="${vscode.l10n.t("Clear overlays")}" class="clear-overlays-button icon">
+							<i class="codicon codicon-clear-all"></i>
+						</button>
+						<button title="${vscode.l10n.t("Open in browser")}" class="open-external-button icon">
+							<i class="codicon codicon-link-external"></i>
+						</button>
+					</nav>
 				</header>
 				<div class="content">
 					<iframe id="browser" sandbox="allow-scripts allow-forms allow-same-origin allow-downloads"></iframe>
