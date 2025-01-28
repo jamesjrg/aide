@@ -70,7 +70,11 @@
       },
       {
         "command": "codestory.enableDeepReasoning",
-        "title": "deep reasoning"
+        "title": "Enable deep reasoning"
+      },
+      {
+        "command": "codestory.add-vite",
+        "title": "Add vite"
       }
     ],
     "aideAgents": [

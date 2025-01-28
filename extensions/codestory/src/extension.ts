@@ -28,6 +28,7 @@ import { restartSidecarBinary, setupSidecar } from './utilities/setupSidecarBina
 import { sidecarURL, sidecarUseSelfRun } from './utilities/sidecarUrl';
 import { getUniqueId } from './utilities/uniqueId';
 import { ProjectContext } from './utilities/workspaceContext';
+import { transformViteConfig } from './devtools/react/installVitePlugin';
 
 export let SIDECAR_CLIENT: SideCarClient | null = null;
 
@@ -346,6 +347,27 @@ export async function activate(context: vscode.ExtensionContext) {
 		return false;
 	}));
 
+	// Add vite plugin
+	context.subscriptions.push(vscode.commands.registerCommand('codestory.add-vite', async () => {
+		try {
+			const workspaceFolders = vscode.workspace.workspaceFolders;
+			if (!workspaceFolders) {
+				throw new Error('No workspace folder found');
+			}
+			const filePath = vscode.Uri.joinPath(workspaceFolders[0].uri, 'vite.config.ts');
+			const fileContent = await vscode.workspace.fs.readFile(filePath);
+			const fileText = Buffer.from(fileContent).toString('utf8');
+			const transformed = await transformViteConfig(fileText);
+			if (transformed) {
+				vscode.workspace.fs.writeFile(filePath, Buffer.from(transformed));
+			} else {
+				throw new Error(`Could not parse your vite config.js`);
+			}
+
+		} catch (error) {
+			vscode.window.showErrorMessage(`Error: ${error}`);
+		}
+	}));
 }
 
 export async function deactivate() {
