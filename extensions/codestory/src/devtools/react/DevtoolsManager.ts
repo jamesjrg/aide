@@ -132,15 +132,17 @@ export class DevtoolsSession extends vscode.Disposable {
 					new vscode.Range(0, 0, Number.MAX_SAFE_INTEGER, Number.MAX_SAFE_INTEGER)
 				);
 
+				console.log(parsedSource);
+
 				let range = fullRange;
 				if (origin === InfoOrigin.Tag || origin === InfoOrigin.DevtoolsSymbolicated) {
 					const fileArrayBuffer = await vscode.workspace.fs.readFile(reference);
 					const fileString = fileArrayBuffer.toString().replace(/\\n/g, '\n');
-					const fullRange = await findTsxNodeAtLine(fileString, line);
-					const endLine = fullRange ? fullRange.endLine : line;
+					const foundRange = await findTsxNodeAtLine(fileString, line - 1);
+					const endLine = foundRange ? foundRange.endLine : line - 1;
 
 					range = new vscode.Range(
-						new vscode.Position(line, column),
+						new vscode.Position(line - 1, column),
 						new vscode.Position(endLine, 9999999),
 					);
 				}
