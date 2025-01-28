@@ -50,6 +50,7 @@ export interface DevtoolsType {
 
 	startInspectingHost(): DevtoolsType;
 	stopInspectingHost(): DevtoolsType;
+	inspectingClearOverlays(): DevtoolsType;
 
 	startServer(
 		port: number,

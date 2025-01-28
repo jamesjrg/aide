@@ -15,8 +15,10 @@ export interface IDevtoolsService {
 	initialize(): void;
 	startInspectingHost(): void;
 	stopInspectingHost(): void;
+	toggleInspectingHost(): void;
 	onDidTriggerInspectingHostStart: Event<void>;
 	onDidTriggerInspectingHostStop: Event<void>;
+	onDidInspectingClearOverlays: Event<void>;
 	isInspecting: boolean;
 	latestPayload: InspectionResult | null | undefined;
 	latestResource: URI | undefined;

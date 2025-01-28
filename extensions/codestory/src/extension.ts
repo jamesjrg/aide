@@ -294,6 +294,9 @@ export async function activate(context: vscode.ExtensionContext) {
 		reactDevtoolsManager.stopInspectingHost();
 	});
 
+	vscode.devtools.onDidTriggerInspectingClearOverlays(() => {
+		reactDevtoolsManager.inspectingClearOverlays();
+	});
 
 	async function openUrl(url: string) {
 		try {

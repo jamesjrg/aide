@@ -29,6 +29,10 @@ export class MainThreadDevtools extends Disposable implements MainThreadDevtools
 		this._register(this._devtoolsService.onDidTriggerInspectingHostStop(() => {
 			this._proxy.$stopInspectingHost();
 		}));
+
+		this._register(this._devtoolsService.onDidInspectingClearOverlays(() => {
+			this._proxy.$inspectingClearOverlays();
+		}));
 	}
 
 	$setLatestPayload(payload: Dto<InspectionResult> | null): void {

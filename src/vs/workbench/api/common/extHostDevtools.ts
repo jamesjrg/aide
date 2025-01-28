@@ -18,6 +18,9 @@ export class ExtHostDevtools implements ExtHostDevtoolsShape {
 	private _onDidTriggerInspectingHostStop = new Emitter<void>();
 	onDidTriggerInspectingHostStop = this._onDidTriggerInspectingHostStop.event;
 
+	private _onDidInspectingClearOverlays = new Emitter<void>();
+	onDidInspectingClearOverlays = this._onDidInspectingClearOverlays.event;
+
 	constructor(
 		mainContext: IMainContext
 	) {
@@ -48,5 +51,9 @@ export class ExtHostDevtools implements ExtHostDevtoolsShape {
 
 	$stopInspectingHost(): void {
 		this._onDidTriggerInspectingHostStop.fire();
+	}
+
+	$inspectingClearOverlays(): void {
+		this._onDidInspectingClearOverlays.fire();
 	}
 }

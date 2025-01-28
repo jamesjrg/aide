@@ -192,6 +192,10 @@ export class DevtoolsSession extends vscode.Disposable {
 		this._devtools.stopInspectingHost();
 	}
 
+	inspectingClearOverlays() {
+		this._devtools.inspectingClearOverlays();
+	}
+
 	override dispose() {
 		super.dispose();
 		this._cleanupProxy();
@@ -299,6 +303,14 @@ export class ReactDevtoolsManager extends vscode.Disposable {
 			return;
 		}
 		this.activeSession.stopInspectingHost();
+	}
+
+	inspectingClearOverlays() {
+		if (!this.activeSession) {
+			console.error('Cannot clear inspecting overlays: no active session');
+			return;
+		}
+		this.activeSession.inspectingClearOverlays();
 	}
 
 	private clearSessionDisposables() {

@@ -142,7 +142,7 @@ class ToggleInspectingHost extends Action2 {
 
 	run(accessor: ServicesAccessor, ...args: any[]) {
 		const devtoolsService = accessor.get(IDevtoolsService);
-		devtoolsService.startInspectingHost();
+		devtoolsService.toggleInspectingHost();
 	}
 }
 
