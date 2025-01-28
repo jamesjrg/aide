@@ -34,6 +34,7 @@ const input = header.querySelector<HTMLInputElement>('.url-input')!;
 const forwardButton = header.querySelector<HTMLButtonElement>('.forward-button')!;
 const backButton = header.querySelector<HTMLButtonElement>('.back-button')!;
 const reloadButton = header.querySelector<HTMLButtonElement>('.reload-button')!;
+const clearOverlaysButton = header.querySelector<HTMLButtonElement>('.clear-overlays-button')!;
 const openExternalButton = header.querySelector<HTMLButtonElement>('.open-external-button')!;
 
 window.addEventListener('message', (e) => {
@@ -91,13 +92,18 @@ onceDocumentLoaded(() => {
 		history.back();
 	});
 
+	clearOverlaysButton.addEventListener('click', () => {
+		vscode.postMessage({
+			type: 'clearOverlays'
+		});
+	});
+
 	openExternalButton.addEventListener('click', () => {
 		vscode.postMessage({
 			type: 'openExternal',
 			url: input.value,
 		});
 	});
-
 
 	reloadButton.addEventListener('click', () => {
 		// This does not seem to trigger what we want
