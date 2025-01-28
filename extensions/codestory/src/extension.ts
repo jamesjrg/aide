@@ -348,7 +348,7 @@ export async function activate(context: vscode.ExtensionContext) {
 		return false;
 	}));
 
-	const addViteCommand = vscode.commands.registerCommand('codestory.add-vite', async () => {
+	const addVitePluginCommand = vscode.commands.registerCommand('codestory.install-vite-plugin', async () => {
 		try {
 			const workspaceFolders = vscode.workspace.workspaceFolders;
 			if (!workspaceFolders || workspaceFolders.length === 0) {
@@ -416,7 +416,7 @@ export async function activate(context: vscode.ExtensionContext) {
 			vscode.window.showErrorMessage(`Error: ${error}`);
 		}
 	});
-	context.subscriptions.push(addViteCommand);
+	context.subscriptions.push(addVitePluginCommand);
 }
 
 export async function deactivate() {
