@@ -33,7 +33,22 @@ function applyEdits(source: string, edits: Edit[]): string {
 
 
 const NAMED_IMPORT = 'componentTagger';
-const PACKAGE_NAME = '@codestoryai/component-tagger';
+export const PACKAGE_NAME = '@codestoryai/component-tagger';
+
+export enum PackageManager {
+	npm = 'npm',
+	pnpm = 'pnpm',
+	yarn = 'yarn',
+	bun = 'bun'
+}
+
+export type PackageManagerType = `${PackageManager}`;
+
+export const installCommandMap = new Map<PackageManagerType, string>();
+installCommandMap.set(PackageManager.npm, `npm install ${PACKAGE_NAME} --save-dev`);
+installCommandMap.set(PackageManager.pnpm, `pnpm add --save-dev ${PACKAGE_NAME}`);
+installCommandMap.set(PackageManager.yarn, `yarn add ${PACKAGE_NAME} --dev`);
+installCommandMap.set(PackageManager.bun, `bun add --dev ${PACKAGE_NAME}`);
 
 /**
  * Quickly detect if the file is (mostly) ESM or CJS by scanning for import declarations.

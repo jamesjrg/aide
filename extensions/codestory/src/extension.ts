@@ -28,7 +28,8 @@ import { restartSidecarBinary, setupSidecar } from './utilities/setupSidecarBina
 import { sidecarURL, sidecarUseSelfRun } from './utilities/sidecarUrl';
 import { getUniqueId } from './utilities/uniqueId';
 import { ProjectContext } from './utilities/workspaceContext';
-import { transformViteConfig } from './devtools/react/installVitePlugin';
+import { installCommandMap, PACKAGE_NAME as COMPONENT_TAGGER_PACKAGE_NAME, PackageManager, transformViteConfig } from './devtools/react/installVitePlugin';
+import { executeTerminalCommand } from './terminal/TerminalManager';
 
 export let SIDECAR_CLIENT: SideCarClient | null = null;
 
@@ -347,27 +348,75 @@ export async function activate(context: vscode.ExtensionContext) {
 		return false;
 	}));
 
-	// Add vite plugin
-	context.subscriptions.push(vscode.commands.registerCommand('codestory.add-vite', async () => {
+	const addViteCommand = vscode.commands.registerCommand('codestory.add-vite', async () => {
 		try {
 			const workspaceFolders = vscode.workspace.workspaceFolders;
-			if (!workspaceFolders) {
+			if (!workspaceFolders || workspaceFolders.length === 0) {
 				throw new Error('No workspace folder found');
 			}
-			const filePath = vscode.Uri.joinPath(workspaceFolders[0].uri, 'vite.config.ts');
-			const fileContent = await vscode.workspace.fs.readFile(filePath);
-			const fileText = Buffer.from(fileContent).toString('utf8');
-			const transformed = await transformViteConfig(fileText);
-			if (transformed) {
-				vscode.workspace.fs.writeFile(filePath, Buffer.from(transformed));
-			} else {
-				throw new Error(`Could not parse your vite config.js`);
+
+
+			const order = ['vite.config.ts', 'vite.config.js', 'vite.config.mjs', 'vite.config.cjs'];
+			let viteConfigUri: vscode.Uri | undefined;
+
+			for (const filename of order) {
+				const foundFiles = await vscode.workspace.findFiles(filename, '**/node_modules/**', 1);
+				if (foundFiles.length > 0) {
+					viteConfigUri = foundFiles[0];
+					break;
+				}
 			}
+
+			if (!viteConfigUri) {
+				throw new Error('No vite.config.{ts,js,mjs,cjs} file found in this workspace');
+			}
+
+			const packageManagerPicks = [
+				{ label: PackageManager.npm, picked: true },
+				{ label: PackageManager.pnpm },
+				{ label: PackageManager.yarn },
+				{ label: PackageManager.bun },
+			];
+
+			const chosenPackageManager = await vscode.window.showQuickPick(packageManagerPicks, {
+				placeHolder: 'Select your package manager…',
+			});
+
+			if (!chosenPackageManager) {
+				vscode.window.showInformationMessage(
+					`Plugin not installed U+0096 user canceled out`
+				);
+				return;
+			}
+
+			vscode.window.showInformationMessage(
+				`Installing latest ${COMPONENT_TAGGER_PACKAGE_NAME}`
+			);
+
+			await executeTerminalCommand(installCommandMap.get(chosenPackageManager.label)!);
+
+			// 3. Now read the config file
+			const viteConfigData = await vscode.workspace.fs.readFile(viteConfigUri);
+			const viteConfigText = Buffer.from(viteConfigData).toString('utf8');
+
+			// 4. Transform the config text
+			const transformed = await transformViteConfig(viteConfigText);
+			if (!transformed) {
+				throw new Error(`Could not parse or transform your ${viteConfigUri.fsPath}`);
+			}
+
+			// 5. Write the transformed text back
+			await vscode.workspace.fs.writeFile(viteConfigUri, Buffer.from(transformed));
+
+			vscode.window.showInformationMessage(
+				`Successfully added plugin configuration to: ${viteConfigUri.fsPath}`
+			);
 
 		} catch (error) {
 			vscode.window.showErrorMessage(`Error: ${error}`);
 		}
-	}));
+	});
+	context.subscriptions.push(addViteCommand);
 }
 
 export async function deactivate() {
