@@ -22,6 +22,7 @@
     "chatVariableResolver",
     "csAuthentication",
     "csevents",
+    "contribEditorContentMenu",
     "defaultChatParticipant",
     "inlineCompletionsAdditions",
     "interactive",
@@ -70,9 +71,22 @@
       },
       {
         "command": "codestory.enableDeepReasoning",
-        "title": "deep reasoning"
+        "title": "Enable deep reasoning"
+      },
+      {
+        "command": "codestory.install-vite-plugin",
+        "title": "Add Vite plugin"
       }
     ],
+    "menus": {
+      "editor/content": [
+        {
+          "command": "codestory.install-vite-plugin",
+          "when": "resourceFilename =~ /^vite\\.config\\.(js|ts|mjs|cjs)$/ && devtools.shouldShowAddPlugin",
+          "group": "navigation@-10"
+        }
+      ]
+    },
     "aideAgents": [
       {
         "id": "aide",

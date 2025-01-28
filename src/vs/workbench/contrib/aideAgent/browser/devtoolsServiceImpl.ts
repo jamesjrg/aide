@@ -11,19 +11,32 @@ import { AgentMode } from '../../../../platform/aideAgent/common/model.js';
 import { IContextKey, IContextKeyService } from '../../../../platform/contextkey/common/contextkey.js';
 import { IEnvironmentService } from '../../../../platform/environment/common/environment.js';
 import { IFileService } from '../../../../platform/files/common/files.js';
-import { IWorkspaceContextService } from '../../../../platform/workspace/common/workspace.js';
+import { IWorkspaceContextService, IWorkspaceFolder } from '../../../../platform/workspace/common/workspace.js';
 import { IHostService } from '../../../services/host/browser/host.js';
 import { IPreviewPartService } from '../../../services/previewPart/browser/previewPartService.js';
 import { IFileQuery, ISearchService, QueryType } from '../../../services/search/common/search.js';
 import { IViewsService } from '../../../services/views/common/viewsService.js';
 import { IDynamicVariable } from '../common/aideAgentVariables.js';
 import { DevtoolsStatus, IDevtoolsService, InspectionResult } from '../common/devtoolsService.js';
-import { CONTEXT_DEVTOOLS_STATUS, CONTEXT_IS_DEVTOOLS_FEATURE_ENABLED, CONTEXT_IS_INSPECTING_HOST } from '../common/devtoolsServiceContextKeys.js';
+import { CONTEXT_DEVTOOLS_STATUS, CONTEXT_IS_DEVTOOLS_FEATURE_ENABLED, CONTEXT_IS_INSPECTING_HOST, CONTEXT_SHOULD_SHOW_ADD_PLUGIN } from '../common/devtoolsServiceContextKeys.js';
 import { ChatViewId } from './aideAgent.js';
 import { ChatViewPane } from './aideAgentViewPane.js';
 import { URI } from '../../../../base/common/uri.js';
 import { ChatDynamicVariableModel } from './contrib/aideAgentDynamicVariables.js';
 import { convertBufferToScreenshotVariable } from './contrib/screenshot.js';
+import { IEditorService } from '../../../services/editor/common/editorService.js';
+import { EditorResourceAccessor } from '../../../common/editor.js';
+import { basename } from '../../../../base/common/resources.js';
+
+
+const viteConfigs = new Set(['vite.config.ts', 'vite.config.js', 'vite.config.mjs', 'vite.config.cjs']);
+
+const taggerPackageName = '@codestoryai/component-tagger';
+
+type PackageJSONType = {
+	dependencies?: Record<string, string>;
+	devDependencies?: Record<string, string>;
+};
 
 export class DevtoolsService extends Disposable implements IDevtoolsService {
 	declare _serviceBrand: undefined;
@@ -41,6 +54,8 @@ export class DevtoolsService extends Disposable implements IDevtoolsService {
 	public readonly onDidInspectingClearOverlays = this._onDidInspectingClearOverlays.event;
 
 	private _isFeatureEnabled: IContextKey<boolean>;
+
+	private _shouldShowAddPlugin: IContextKey<boolean>;
 
 	private _status: IContextKey<DevtoolsStatus>;
 	get status(): DevtoolsStatus {
@@ -97,19 +112,82 @@ export class DevtoolsService extends Disposable implements IDevtoolsService {
 		@IHostService private readonly hostService: IHostService,
 		@IWorkspaceContextService private readonly workspaceContextService: IWorkspaceContextService,
 		@ISearchService private readonly searchService: ISearchService,
-		@IPreviewPartService private readonly previewPartService: IPreviewPartService
+		@IPreviewPartService private readonly previewPartService: IPreviewPartService,
+		@IEditorService private readonly editorService: IEditorService
 	) {
 		super();
 
 		this._status = CONTEXT_DEVTOOLS_STATUS.bindTo(this.contextKeyService);
 		this._isInspecting = CONTEXT_IS_INSPECTING_HOST.bindTo(this.contextKeyService);
 		this._isFeatureEnabled = CONTEXT_IS_DEVTOOLS_FEATURE_ENABLED.bindTo(this.contextKeyService);
+		this._shouldShowAddPlugin = CONTEXT_SHOULD_SHOW_ADD_PLUGIN.bindTo(this.contextKeyService);
+
+		this.editorService.onDidActiveEditorChange(() => this.checkIfShouldShowAddPlugin());
+		// (You might also listen for workspace folder changes, if that matters)
 	}
 
 	async initialize() {
 		const isReactProject = await this.hasReactDependencyInAnyPackageJson();
 		this._isFeatureEnabled.set(isReactProject);
 	}
+
+	private async checkForReactDependencyInProject(workspaceFolder: IWorkspaceFolder) {
+		// Search for all package.json files under the folder, excluding settings and ignore files
+		const searchQuery: IFileQuery = {
+			type: QueryType.File,
+			folderQueries: [{ folder: workspaceFolder.uri, disregardGlobalIgnoreFiles: false, disregardIgnoreFiles: false }],
+			filePattern: 'package.json',
+		};
+
+		const searchResults = await this.searchService.fileSearch(searchQuery, CancellationToken.None);
+		for (const fileMatch of searchResults.results) {
+			try {
+				// Load content of each package.json
+				const fileContent = (await this.fileService.readFile(fileMatch.resource)).value.toString();
+				const parsed = JSON.parse(fileContent);
+
+				// Check if 'react' is in dependencies or devDependencies
+				if (this.checkForDependency('react', parsed)) {
+					return fileMatch;
+				}
+			} catch {
+				// Ignore file parsing errors
+			}
+		}
+		return false;
+	}
+
+
+	private async checkIfShouldShowAddPlugin() {
+		const editor = this.editorService.activeEditor;
+		const resource = EditorResourceAccessor.getOriginalUri(editor);
+		if (!resource) {
+			return;
+		}
+		const fileName = basename(resource);
+		if (viteConfigs.has(fileName)) {
+			const folder = this.workspaceContextService.getWorkspaceFolder(resource);
+			if (!folder) {
+				return;
+			}
+			const matchedPackageJson = await this.checkForReactDependencyInProject(folder);
+			if (matchedPackageJson) {
+				const fileContent = (await this.fileService.readFile(matchedPackageJson.resource)).value.toString();
+				const parsed = JSON.parse(fileContent);
+				const hasComponentTagger = this.checkForDependency(taggerPackageName, parsed);
+				this._shouldShowAddPlugin.set(!hasComponentTagger);
+			}
+		}
+	}
+
+	private checkForDependency(dependency: string, parsedJSON: PackageJSONType) {
+		const depsValues = parsedJSON.dependencies ? Object.keys(parsedJSON.dependencies) : [];
+		const depsSet = new Set(depsValues);
+		const devDepsValues = parsedJSON.devDependencies ? Object.keys(parsedJSON.devDependencies) : [];
+		const devDepsSet = new Set(devDepsValues);
+		return depsSet.has(dependency) || devDepsSet.has(dependency);
+	}
+
 
 	private async hasReactDependencyInAnyPackageJson(): Promise<boolean> {
 		// Get all workspace folders (there may be multiple)
@@ -119,31 +197,8 @@ export class DevtoolsService extends Disposable implements IDevtoolsService {
 		}
 
 		for (const folder of folders) {
-			// Search for all package.json files under the folder, excluding settings and ignore files
-			const searchQuery: IFileQuery = {
-				type: QueryType.File,
-				folderQueries: [{ folder: folder.uri, disregardGlobalIgnoreFiles: false, disregardIgnoreFiles: false }],
-				filePattern: 'package.json',
-			};
-
-			const searchResults = await this.searchService.fileSearch(searchQuery, CancellationToken.None);
-			for (const fileMatch of searchResults.results) {
-				try {
-					// Load content of each package.json
-					const fileContent = (await this.fileService.readFile(fileMatch.resource)).value.toString();
-					const parsed = JSON.parse(fileContent);
-
-					// Check if 'react' is in dependencies or devDependencies
-					if (
-						(parsed.dependencies && parsed.dependencies.react) ||
-						(parsed.devDependencies && parsed.devDependencies.react)
-					) {
-						return true;
-					}
-				} catch {
-					// Ignore file parsing errors
-				}
-			}
+			const isReactProject = await this.checkForReactDependencyInProject(folder);
+			if (isReactProject) { return true; }
 		}
 		return false;
 	}
