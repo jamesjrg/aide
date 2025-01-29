@@ -27,6 +27,10 @@ export class ExtHostDevtools implements ExtHostDevtoolsShape {
 		this._proxy = mainContext.getProxy(MainContext.MainThreadDevtools);
 	}
 
+	getScreenshot(): Promise<string | undefined> {
+		return this._proxy.$getScreenshot();
+	}
+
 	setStatus(status: vscode.DevtoolsStatus): void {
 		const state = DevtoolsState.from(status);
 		this._proxy.$setStatus(state);

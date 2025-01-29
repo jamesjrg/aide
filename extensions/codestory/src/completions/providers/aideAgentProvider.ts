@@ -490,7 +490,7 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 				await this.reportAgentEventsToChat(sessionId, true, responseStream, addError);
 			} else {
 				const isWholeCodebase = event.scope === vscode.AideAgentScope.Codebase;
-				const responseStream = await this.sidecarClient.agentSessionPlanStep(prompt, sessionId, exchangeIdForEvent, editorUrl, agentMode, variables, this.currentRepoRef, this.projectContext.labels, isWholeCodebase, workosAccessToken);
+				const responseStream = await this.sidecarClient.agentSessionPlanStep(prompt, sessionId, exchangeIdForEvent, editorUrl, agentMode, variables, this.currentRepoRef, this.projectContext.labels, isWholeCodebase, workosAccessToken, event.isDevtoolsContext);
 				await this.reportAgentEventsToChat(sessionId, true, responseStream, addError);
 			}
 		} else if (event.mode === vscode.AideAgentMode.Plan || event.mode === vscode.AideAgentMode.Agentic) {
@@ -499,7 +499,7 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 			// o1 or not
 			// once we have a step of the plan we should stream it along with the edits of the plan
 			// and keep doing that until we are done completely
-			const responseStream = await this.sidecarClient.agentSessionPlanStep(prompt, sessionId, exchangeIdForEvent, editorUrl, agentMode, variables, this.currentRepoRef, this.projectContext.labels, false, workosAccessToken);
+			const responseStream = await this.sidecarClient.agentSessionPlanStep(prompt, sessionId, exchangeIdForEvent, editorUrl, agentMode, variables, this.currentRepoRef, this.projectContext.labels, false, workosAccessToken, event.isDevtoolsContext);
 			await this.reportAgentEventsToChat(sessionId, true, responseStream, addError);
 		}
 		// This we use to track agent usage - only hit this if we didn't fail

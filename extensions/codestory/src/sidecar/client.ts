@@ -1097,6 +1097,7 @@ export class SideCarClient {
 		projectLabels: string[],
 		codebaseSearch: boolean,
 		workosAccessToken: string,
+		isDevtoolsContext: boolean,
 	): AsyncIterableIterator<SideCarAgentEvent> {
 		try {
 			if (agentMode !== vscode.AideAgentMode.Agentic && agentMode !== vscode.AideAgentMode.Plan) {
@@ -1143,6 +1144,7 @@ export class SideCarClient {
 				shell: currentShell,
 				aide_rules: aideRulesContent,
 				reasoning: sidecarAgentUsesReasoning,
+				is_devtools_context: isDevtoolsContext,
 			};
 
 			const asyncIterableResponse = callServerEventStreamingBufferedPOST(url, body);
