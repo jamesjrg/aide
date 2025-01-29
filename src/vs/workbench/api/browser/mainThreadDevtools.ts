@@ -3,10 +3,10 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
+import { encodeBase64, VSBuffer } from '../../../base/common/buffer.js';
 import { Disposable } from '../../../base/common/lifecycle.js';
 import { revive } from '../../../base/common/marshalling.js';
-import { IDevtoolsService, DevtoolsStatus, InspectionResult } from '../../contrib/aideAgent/common/devtoolsService.js';
-
+import { DevtoolsStatus, IDevtoolsService, InspectionResult } from '../../contrib/aideAgent/common/devtoolsService.js';
 import { extHostNamedCustomer, IExtHostContext } from '../../services/extensions/common/extHostCustomers.js';
 import { Dto } from '../../services/extensions/common/proxyIdentifier.js';
 import { ExtHostContext, ExtHostDevtoolsShape, MainContext, MainThreadDevtoolsShape } from '../common/extHost.protocol.js';
@@ -30,9 +30,18 @@ export class MainThreadDevtools extends Disposable implements MainThreadDevtools
 			this._proxy.$stopInspectingHost();
 		}));
 
-		this._register(this._devtoolsService.onDidInspectingClearOverlays(() => {
+		this._register(this._devtoolsService.onDidClearInspectingOverlays(() => {
 			this._proxy.$inspectingClearOverlays();
 		}));
+	}
+
+	async $getScreenshot(): Promise<string | undefined> {
+		const screenshot = await this._devtoolsService.getScreenshot();
+		if (screenshot) {
+			const arrData = new Uint8Array(screenshot);
+			return encodeBase64(VSBuffer.wrap(arrData));
+		}
+		return undefined;
 	}
 
 	$setLatestPayload(payload: Dto<InspectionResult> | null): void {

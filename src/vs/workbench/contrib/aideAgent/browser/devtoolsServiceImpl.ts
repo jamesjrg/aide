@@ -50,8 +50,8 @@ export class DevtoolsService extends Disposable implements IDevtoolsService {
 	private readonly _onDidTriggerInspectingHostStop = this._register(new Emitter<void>());
 	public readonly onDidTriggerInspectingHostStop = this._onDidTriggerInspectingHostStop.event;
 
-	private readonly _onDidInspectingClearOverlays = this._register(new Emitter<void>());
-	public readonly onDidInspectingClearOverlays = this._onDidInspectingClearOverlays.event;
+	private readonly _onDidClearInspectingOverlays = this._register(new Emitter<void>());
+	public readonly onDidClearInspectingOverlays = this._onDidClearInspectingOverlays.event;
 
 	private _isFeatureEnabled: IContextKey<boolean>;
 
@@ -228,9 +228,8 @@ export class DevtoolsService extends Disposable implements IDevtoolsService {
 		this._onDidChangeStatus.fire(this.status);
 	}
 
-	private async attachScreenshot() {
+	async getScreenshot() {
 		const screenshot = await this.hostService.getScreenshot();
-		const widget = this.getWidget();
 		if (screenshot) {
 			const previewClientRect = this.previewPartService.getBoundingClientRect();
 			const pixelRatio = getWindow(this.previewPartService.mainPart.element).devicePixelRatio;
@@ -241,10 +240,18 @@ export class DevtoolsService extends Disposable implements IDevtoolsService {
 				height: previewClientRect.height * pixelRatio
 			};
 			const croppedScreenShot = await cropImage(screenshot, cropRectangle);
-			widget.attachmentModel.addContext(convertBufferToScreenshotVariable(croppedScreenShot));
+			return croppedScreenShot;
 		}
+		return undefined;
 	}
 
+	private async attachScreenshot() {
+		const screenshot = await this.getScreenshot();
+		if (screenshot) {
+			const widget = this.getWidget();
+			widget.attachmentModel.addContext(convertBufferToScreenshotVariable(screenshot));
+		}
+	}
 
 	private async addReference(payload: InspectionResult | null) {
 		const widget = this.getWidget();
@@ -260,10 +267,13 @@ export class DevtoolsService extends Disposable implements IDevtoolsService {
 			return;
 		}
 
-		if (payload === null) {
-			this.attachScreenshot();
-		} else if (widget.viewModel?.model) {
+		if (widget.viewModel?.model) {
 			widget.viewModel.model.isDevtoolsContext = true;
+			this.attachScreenshot();
+
+			if (payload === null) {
+				return;
+			}
 
 			const file = await this.fileService.stat(payload.location.uri);
 			const displayName = `@${payload.componentName || file.name}:${payload.location.range.startLineNumber}-${payload.location.range.endLineNumber}`;
@@ -290,8 +300,6 @@ export class DevtoolsService extends Disposable implements IDevtoolsService {
 			// Add leading space if we are not at the very beginning of the text model
 			const output = isLeading ? displayName : ' ' + displayName;
 
-			this.attachScreenshot();
-
 			const success = input.executeEdits('addReactComponentSource', [{ range: replaceRange, text: output }]);
 			if (success) {
 				const variable: IDynamicVariable = {
@@ -307,7 +315,6 @@ export class DevtoolsService extends Disposable implements IDevtoolsService {
 				dynamicVariablesModel.addReference(variable);
 				input.focus();
 			}
-
 		}
 	}
 
@@ -319,7 +326,7 @@ export class DevtoolsService extends Disposable implements IDevtoolsService {
 	stopInspectingHost(): void {
 		this._isInspecting.set(false);
 		this._onDidTriggerInspectingHostStop.fire();
-		this._onDidInspectingClearOverlays.fire();
+		this._onDidClearInspectingOverlays.fire();
 	}
 
 	toggleInspectingHost(): void {

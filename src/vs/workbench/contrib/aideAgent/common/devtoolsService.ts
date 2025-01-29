@@ -18,7 +18,8 @@ export interface IDevtoolsService {
 	toggleInspectingHost(): void;
 	onDidTriggerInspectingHostStart: Event<void>;
 	onDidTriggerInspectingHostStop: Event<void>;
-	onDidInspectingClearOverlays: Event<void>;
+	onDidClearInspectingOverlays: Event<void>;
+	getScreenshot(): Promise<ArrayBuffer | undefined>;
 	isInspecting: boolean;
 	latestPayload: InspectionResult | null | undefined;
 	latestResource: URI | undefined;

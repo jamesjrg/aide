@@ -1630,6 +1630,10 @@ export function createApiFactoryAndRegisterActors(accessor: ServicesAccessor): I
 
 		// namespace: devtools
 		const devtools: typeof vscode.devtools = {
+			getScreenshot() {
+				checkProposedApiEnabled(extension, 'devtools');
+				return extHostDevtools.getScreenshot();
+			},
 			setStatus(status) {
 				checkProposedApiEnabled(extension, 'devtools');
 				return extHostDevtools.setStatus(status);

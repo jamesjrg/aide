@@ -20,6 +20,7 @@ import { goToTypeDefinition } from './goToTypeDefinition';
 import { getRipGrepPath } from '../utilities/ripGrep';
 import { executeTerminalCommand } from '../terminal/TerminalManager';
 import { listFilesEndpoint } from './listFiles';
+import { getBrowserScreenshot } from './devtools';
 
 // Helper function to read the request body
 function readRequestBody(req: http.IncomingMessage): Promise<string> {
@@ -231,6 +232,12 @@ export function handleRequest(
 				const response = await executeTerminalCommand(request.command, workspace.rootPath ?? '', request.wait_for_exit);
 				res.writeHead(200, { 'Content-Type': 'application/json' });
 				res.end(JSON.stringify({ output: response }));
+			} else if (req.method === 'POST' && req.url === '/devtools_screenshot') {
+				console.log('hitting devtool_screenshot');
+				const response = await getBrowserScreenshot();
+				console.log('screenshot: ', response);
+				res.writeHead(200, { 'Content-Type': 'application/json' });
+				res.end(JSON.stringify(response));
 			} else {
 				res.writeHead(200, { 'Content-Type': 'application/json' });
 				res.end(JSON.stringify({ reply: 'gg_testing' }));

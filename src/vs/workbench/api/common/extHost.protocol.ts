@@ -3070,6 +3070,7 @@ export interface ExtHostDevtoolsShape {
 }
 
 export interface MainThreadDevtoolsShape {
+	$getScreenshot(): Promise<string | undefined>;
 	$setLatestPayload(payload: Dto<InspectionResult> | null): void;
 	$setStatus(status: DevtoolsStatus): void;
 	$setIsInspecting(isInspecting: boolean): void;
