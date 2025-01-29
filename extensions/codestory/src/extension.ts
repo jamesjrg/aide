@@ -8,7 +8,7 @@ import * as vscode from 'vscode';
 import { createInlineCompletionItemProvider } from './completions/create-inline-completion-item-provider';
 import { AideAgentSessionProvider } from './completions/providers/aideAgentProvider';
 import { CSEventHandler } from './csEvents/csEventHandler';
-import { ReactDevtoolsManager } from './devtools/react/DevtoolsManager';
+import { isViteConfigFile, ReactDevtoolsManager } from './devtools/react/DevtoolsManager';
 import { getGitCurrentHash, getGitRepoName } from './git/helper';
 import { aideCommands } from './inlineCompletion/commands';
 import { startupStatusBar } from './inlineCompletion/statusBar';
@@ -30,6 +30,7 @@ import { getUniqueId } from './utilities/uniqueId';
 import { ProjectContext } from './utilities/workspaceContext';
 import { installCommandMap, PACKAGE_NAME as COMPONENT_TAGGER_PACKAGE_NAME, PackageManager, transformViteConfig } from './devtools/react/installVitePlugin';
 import { executeTerminalCommand } from './terminal/TerminalManager';
+import { basename, dirname } from 'node:path';
 
 export let SIDECAR_CLIENT: SideCarClient | null = null;
 
@@ -356,74 +357,174 @@ export async function activate(context: vscode.ExtensionContext) {
 		return false;
 	}));
 
-	const addVitePluginCommand = vscode.commands.registerCommand('codestory.install-vite-plugin', async () => {
-		try {
-			const workspaceFolders = vscode.workspace.workspaceFolders;
-			if (!workspaceFolders || workspaceFolders.length === 0) {
-				throw new Error('No workspace folder found');
-			}
+	const addVitePluginCommand = vscode.commands.registerCommand(
+		'codestory.install-vite-plugin',
+		async (givenViteConfigUri?: vscode.Uri) => {
+			try {
 
-
-			const order = ['vite.config.ts', 'vite.config.js', 'vite.config.mjs', 'vite.config.cjs'];
-			let viteConfigUri: vscode.Uri | undefined;
-
-			for (const filename of order) {
-				const foundFiles = await vscode.workspace.findFiles(filename, '**/node_modules/**', 1);
-				if (foundFiles.length > 0) {
-					viteConfigUri = foundFiles[0];
-					break;
+				// Check that we have a workspace at all
+				const workspaceFolders = vscode.workspace.workspaceFolders;
+				if (!workspaceFolders || workspaceFolders.length === 0) {
+					throw new Error('No workspace folder found');
 				}
-			}
 
-			if (!viteConfigUri) {
-				throw new Error('No vite.config.{ts,js,mjs,cjs} file found in this workspace');
-			}
+				// Decide which vite.config file to modify
+				let viteConfigUri = givenViteConfigUri;
 
-			const packageManagerPicks = [
-				{ label: PackageManager.npm, picked: true },
-				{ label: PackageManager.pnpm },
-				{ label: PackageManager.yarn },
-				{ label: PackageManager.bun },
-			];
+				if (!viteConfigUri) {
+					const activeEditor = vscode.window.activeTextEditor;
+					if (
+						activeEditor &&
+						isViteConfigFile(activeEditor.document.uri)
+					) {
+						// Use the currently open file if it's a vite.config
+						viteConfigUri = activeEditor.document.uri;
+					} else {
+						// Otherwise, find all vite.config.* in the workspace
+						const allConfigs = await vscode.workspace.findFiles(
+							'**/vite.config.{ts,js,mjs,cjs}',
+							'**/node_modules/**'
+						);
+						if (allConfigs.length === 0) {
+							throw new Error('No Vite config file found in this workspace');
+						} else if (allConfigs.length === 1) {
+							// (a) If there is only one, offer to use it or manually pick
+							const single = allConfigs[0];
+							const pick = await vscode.window.showQuickPick(
+								[
+									{ label: 'Use the single config found', description: single.fsPath },
+									{ label: 'Manually select from all found configs', description: '' },
+								],
+								{ placeHolder: 'One config found. Which do you want to use?' }
+							);
+							if (!pick) {
+								// User canceled
+								return;
+							}
+							if (pick.label === 'Use the single config found') {
+								viteConfigUri = single;
+							} else {
+								// "Manually select" - in this simplest approach,
+								// we just show a pick of the (only) config in the array.
+								// (You could also do more advanced logic if needed.)
+								const secondPick = await vscode.window.showQuickPick(
+									allConfigs.map((uri) => ({
+										label: basename(uri.fsPath),
+										description: uri.fsPath,
+									})),
+									{ placeHolder: 'Select a Vite config' }
+								);
+								if (!secondPick) {
+									return;
+								}
+								viteConfigUri = allConfigs.find(
+									(uri) => uri.fsPath === secondPick.description
+								);
+							}
+						} else {
+							// (b) If there's more than one, prompt the user
+							// first show them all discovered configs + last fallback
+							const picks = allConfigs.map((uri) => ({
+								label: basename(uri.fsPath),
+								description: uri.fsPath,
+							}));
+							picks.push({
+								label: 'Manually choose from a list',
+								description: '',
+							});
 
-			const chosenPackageManager = await vscode.window.showQuickPick(packageManagerPicks, {
-				placeHolder: 'Select your package manager…',
-			});
+							const pick = await vscode.window.showQuickPick(picks, {
+								placeHolder: 'Multiple Vite configs found. Select one, or pick from the list.',
+							});
+							if (!pick) {
+								return;
+							}
+							if (pick.label === 'Manually choose from a list') {
+								// Show them again in a second pick - or do something more elaborate if needed
+								const secondPick = await vscode.window.showQuickPick(
+									picks.slice(0, -1), // everything except "manually choose"
+									{ placeHolder: 'Select a Vite config' }
+								);
+								if (!secondPick) {
+									return;
+								}
+								viteConfigUri = allConfigs.find(
+									(uri) => basename(uri.fsPath) === secondPick.label
+								);
+							} else {
+								// They've chosen one of the actual config files
+								viteConfigUri = allConfigs.find(
+									(uri) => basename(uri.fsPath) === pick.label
+								);
+							}
+						}
+					}
+				}
 
-			if (!chosenPackageManager) {
-				vscode.window.showInformationMessage(
-					`Plugin not installed U+0096 user canceled out`
+				if (!viteConfigUri) {
+					// If we still have no config, abort
+					throw new Error('No valid vite.config file to modify');
+				}
+
+				// 3. Prompt for package manager
+				const packageManagerPicks = [
+					{ label: PackageManager.npm, picked: true },
+					{ label: PackageManager.pnpm },
+					{ label: PackageManager.yarn },
+					{ label: PackageManager.bun },
+				];
+				const chosenPackageManager = await vscode.window.showQuickPick(
+					packageManagerPicks,
+					{ placeHolder: 'Select your package manager…' }
 				);
-				return;
+				if (!chosenPackageManager) {
+					vscode.window.showInformationMessage(
+						'Plugin not installed - user canceled.'
+					);
+					return;
+				}
+
+				// Install the plugin
+				vscode.window.showInformationMessage(
+					`Installing latest ${COMPONENT_TAGGER_PACKAGE_NAME}`
+				);
+
+
+				const commandCwd = dirname(viteConfigUri.fsPath);
+				await executeTerminalCommand(
+					installCommandMap.get(chosenPackageManager.label)!,
+					commandCwd
+				);
+
+				// Read the config file
+				const viteConfigData = await vscode.workspace.fs.readFile(viteConfigUri);
+				const viteConfigText = Buffer.from(viteConfigData).toString('utf8');
+
+				// Transform the config text
+				const transformed = await transformViteConfig(viteConfigText);
+				if (!transformed) {
+					throw new Error(
+						`Could not parse or transform your ${viteConfigUri.fsPath}`
+					);
+				}
+
+				// Write the transformed text back
+				await vscode.workspace.fs.writeFile(
+					viteConfigUri,
+					Buffer.from(transformed)
+				);
+				vscode.window.showInformationMessage(
+					`Successfully added plugin configuration to: ${viteConfigUri.fsPath}`
+				);
+
+				await vscode.commands.executeCommand('setContext', 'devtools.shouldShowAddPlugin', false);
+				await vscode.commands.executeCommand('editor.action.formatDocument');
+
+			} catch (error: any) {
+				vscode.window.showErrorMessage(`Error: ${error}`);
 			}
-
-			vscode.window.showInformationMessage(
-				`Installing latest ${COMPONENT_TAGGER_PACKAGE_NAME}`
-			);
-
-			await executeTerminalCommand(installCommandMap.get(chosenPackageManager.label)!);
-
-			// 3. Now read the config file
-			const viteConfigData = await vscode.workspace.fs.readFile(viteConfigUri);
-			const viteConfigText = Buffer.from(viteConfigData).toString('utf8');
-
-			// 4. Transform the config text
-			const transformed = await transformViteConfig(viteConfigText);
-			if (!transformed) {
-				throw new Error(`Could not parse or transform your ${viteConfigUri.fsPath}`);
-			}
-
-			// 5. Write the transformed text back
-			await vscode.workspace.fs.writeFile(viteConfigUri, Buffer.from(transformed));
-
-			vscode.window.showInformationMessage(
-				`Successfully added plugin configuration to: ${viteConfigUri.fsPath}`
-			);
-
-		} catch (error) {
-			vscode.window.showErrorMessage(`Error: ${error}`);
 		}
-	});
+	);
 	context.subscriptions.push(addVitePluginCommand);
 }
 
