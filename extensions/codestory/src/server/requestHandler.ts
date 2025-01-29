@@ -232,7 +232,7 @@ export function handleRequest(
 				const response = await executeTerminalCommand(request.command, workspace.rootPath ?? '', request.wait_for_exit);
 				res.writeHead(200, { 'Content-Type': 'application/json' });
 				res.end(JSON.stringify({ output: response }));
-			} else if (req.method === 'POST' && req.url === '/devtools_screenshot') {
+			} else if (req.method === 'GET' && req.url === '/devtools_screenshot') {
 				console.log('hitting devtool_screenshot');
 				const response = await getBrowserScreenshot();
 				console.log('screenshot: ', response);
