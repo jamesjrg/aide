@@ -83,7 +83,10 @@
         {
           "command": "codestory.install-vite-plugin",
           "when": "resourceFilename =~ /^vite\\.config\\.(js|ts|mjs|cjs)$/ && devtools.shouldShowAddPlugin",
-          "group": "navigation@-10"
+          "group": "navigation@-10",
+          "args": [
+            "${resourceDirname}"
+          ]
         }
       ]
     },

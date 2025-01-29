@@ -94,12 +94,16 @@ function isLikelyESM(rootNode: Parser.SyntaxNode): { isESM: boolean; usesDoubleQ
 function hasTaggerImportOrRequire(rootNode: Parser.SyntaxNode): boolean {
 	const stack = [rootNode];
 	while (stack.length > 0) {
-		const node = stack.pop()!;
+		const node = stack.shift()!;
 
 		// Look for import_statement with source '@codestoryai/component-tagger'
 		if (node.type === 'import_statement') {
 			// The last child is usually the string literal for import source
-			const maybeSource = node.lastChild;
+			let maybeSource = node.lastChild;
+			// If there are semicolons, get the child before that;
+			if (maybeSource && maybeSource.text === ';') {
+				maybeSource = maybeSource.previousSibling;
+			}
 			if (maybeSource && maybeSource.text.replace(/['"]/g, '') === '@codestoryai/component-tagger') {
 				return true;
 			}

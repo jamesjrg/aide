@@ -9,7 +9,7 @@ import createDevtools from './dist/standalone.js';
 import { proxy, ProxyResult } from './proxy';
 import { DevtoolsStatus, DevtoolsType, InfoOrigin, InspectedElementPayload, InspectElementParsedFullData, InspectionResult } from './types';
 import { findTsxNodeAtLine } from '../../languages/tsxCodeSymbols.js';
-import { join } from 'node:path';
+import { join, basename } from 'node:path';
 
 export class DevtoolsSession extends vscode.Disposable {
 
@@ -344,3 +344,7 @@ class DeferredPromise {
 	}
 }
 
+export function isViteConfigFile(uri: vscode.Uri): boolean {
+	const base = basename(uri.fsPath);
+	return /^vite\.config\.(ts|js|mjs|cjs)$/.test(base);
+}

@@ -129,6 +129,8 @@ export class DevtoolsService extends Disposable implements IDevtoolsService {
 	async initialize() {
 		const isReactProject = await this.hasReactDependencyInAnyPackageJson();
 		this._isFeatureEnabled.set(isReactProject);
+
+		this.checkIfShouldShowAddPlugin();
 	}
 
 	private async checkForReactDependencyInProject(workspaceFolder: IWorkspaceFolder) {
