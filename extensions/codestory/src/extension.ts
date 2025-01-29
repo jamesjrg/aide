@@ -21,7 +21,7 @@ import { SimpleBrowserManager } from './simpleBrowser/simpleBrowserManager';
 import { loadOrSaveToStorage } from './storage/types';
 import { copySettings, migrateFromVSCodeOSS } from './utilities/copySettings';
 import { killProcessOnPort } from './utilities/killPort';
-import { getRelevantFiles, shouldTrackFile } from './utilities/openTabs';
+import { shouldTrackFile } from './utilities/openTabs';
 import { findPortPosition } from './utilities/port';
 import { checkReadonlyFSMode } from './utilities/readonlyFS';
 import { restartSidecarBinary, setupSidecar } from './utilities/setupSidecarBinary';
@@ -103,14 +103,6 @@ export async function activate(context: vscode.ExtensionContext) {
 	const sidecarClient = new SideCarClient(modelConfiguration);
 	SIDECAR_CLIENT = sidecarClient;
 
-	// we want to send the open tabs here to the sidecar
-	const openTextDocuments = await getRelevantFiles();
-	openTextDocuments.forEach((openTextDocument) => {
-		// not awaiting here so we can keep loading the extension in the background
-		if (shouldTrackFile(openTextDocument.uri)) {
-			sidecarClient.documentOpen(openTextDocument.uri.fsPath, openTextDocument.contents, openTextDocument.language);
-		}
-	});
 	// Setup the current repo representation here
 	const currentRepo = new RepoRef(
 		// We assume the root-path is the one we are interested in
@@ -237,23 +229,6 @@ export async function activate(context: vscode.ExtensionContext) {
 				await sidecarClient.sendDiagnostics(uri.toString(), diagnostics);
 			} catch (error) {
 				// console.error(`Failed to send diagnostics for ${uri.toString()}:`, error);
-			}
-		}
-	});
-
-	vscode.window.onDidChangeActiveTextEditor(async (editor) => {
-		if (editor) {
-			const activeDocument = editor.document;
-			if (activeDocument) {
-				const activeDocumentUri = activeDocument.uri;
-				if (shouldTrackFile(activeDocumentUri)) {
-					// track that changed document over here
-					await sidecarClient.documentOpen(
-						activeDocumentUri.fsPath,
-						activeDocument.getText(),
-						activeDocument.languageId
-					);
-				}
 			}
 		}
 	});
