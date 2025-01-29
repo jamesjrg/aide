@@ -8,7 +8,6 @@ import { Position, Range, workspace } from 'vscode';
 import { getDiagnosticsFromEditor, getEnrichedDiagnostics, getFileDiagnosticsFromEditor, getFullWorkspaceDiagnostics, getHoverInformation } from './diagnostics';
 import { openFileEditor } from './openFile';
 import { goToDefinition } from './goToDefinition';
-import { SIDECAR_CLIENT } from '../extension';
 import { goToImplementation } from './goToImplementation';
 import { quickFixInvocation, quickFixList } from './quickFix';
 import { symbolSearch } from './symbolSearch';
@@ -109,10 +108,6 @@ export function handleRequest(
 				const body = await readRequestBody(req);
 				const openFileRequest: SidecarOpenFileToolRequest = JSON.parse(body);
 				const response = await openFileEditor(openFileRequest);
-				if (response.exists) {
-					// we should only do this if there is some file content
-					SIDECAR_CLIENT?.documentOpen(openFileRequest.fs_file_path, response.file_contents, response.language);
-				}
 				res.writeHead(200, { 'Content-Type': 'application/json' });
 				res.end(JSON.stringify(response));
 			} else if (req.method === 'POST' && req.url === '/go_to_definition') {
