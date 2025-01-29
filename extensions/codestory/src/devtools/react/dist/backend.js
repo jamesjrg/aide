@@ -1105,7 +1105,7 @@ exports.useSyncExternalStore = function (subscribe, getSnapshot, getServerSnapsh
 exports.useTransition = function () {
   return ReactSharedInternals.H.useTransition();
 };
-exports.version = "19.1.0-experimental-b0928f08-20250115";
+exports.version = "19.1.0-experimental-3bc46151-20250117";
 
 /***/ }),
 
@@ -5836,6 +5836,7 @@ function setupHighlighter(bridge, agent) {
   bridge.addListener('shutdown', stopInspectingHost);
   bridge.addListener('startInspectingHost', startInspectingHost);
   bridge.addListener('stopInspectingHost', stopInspectingHost);
+  bridge.addListener('inspectingClearOverlays', inspectingClearOverlays);
   function startInspectingHost() {
     registerListenersOnWindow(window);
   }
@@ -5864,6 +5865,9 @@ function setupHighlighter(bridge, agent) {
       }
     });
     iframesListeningTo = new Set();
+  }
+  function inspectingClearOverlays() {
+    hideOverlay();
   }
   function removeListenersOnWindow(window) {
     // This plug-in may run in non-DOM environments (e.g. React Native).
@@ -6674,7 +6678,7 @@ var Agent = /*#__PURE__*/function (_EventEmitter) {
       }
     });
     agent_defineProperty(_this, "getBackendVersion", function () {
-      var version = "6.0.1-9f0668bad6";
+      var version = "6.0.1-f736a28fc";
       if (version) {
         _this._bridge.send('backendVersion', version);
       }
