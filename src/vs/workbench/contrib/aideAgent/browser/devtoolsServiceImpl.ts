@@ -270,6 +270,7 @@ export class DevtoolsService extends Disposable implements IDevtoolsService {
 		if (widget.viewModel?.model) {
 			widget.viewModel.model.isDevtoolsContext = true;
 			this.attachScreenshot();
+			this._onDidClearInspectingOverlays.fire();
 
 			if (payload === null) {
 				return;
