@@ -56,7 +56,7 @@ class AideResponseStreamCollection {
 			// on the sidecar... pretty sure I will forget and scream at myself later on
 			// for having herd knowledged like this
 			const responseStreamAnswer = this.sidecarClient.cancelRunningEvent(responseStreamIdentifier.sessionId, responseStreamIdentifier.exchangeId, this.aideAgentSessionProvider.editorUrl!, '');
-			this.aideAgentSessionProvider.reportAgentEventsToChat(responseStreamIdentifier.sessionId, vscode.AideAgentMode.Agentic, responseStreamAnswer);
+			this.aideAgentSessionProvider.reportAgentEventsToChat(responseStreamIdentifier.sessionId, responseStreamAnswer);
 		}));
 		this.responseStreamCollection.set(this.getKey(responseStreamIdentifier), responseStream);
 	}
@@ -478,9 +478,15 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 		const agentMode = event.mode;
 		const variables = event.references;
 
+		// Closure to refactor as little as possible
+		let errored = false;
+		const onError = () => {
+			errored = true;
+		};
+
 		if (agentMode === vscode.AideAgentMode.Chat) {
 			const responseStream = this.sidecarClient.agentSessionChat(prompt, sessionId, exchangeIdForEvent, editorUrl, agentMode, variables, this.currentRepoRef, this.projectContext.labels, workosAccessToken);
-			await this.reportAgentEventsToChat(sessionId, agentMode, responseStream);
+			await this.reportAgentEventsToChat(sessionId, responseStream, onError);
 		} else if (agentMode === vscode.AideAgentMode.Edit) {
 			// Now lets try to handle the edit event first
 			// there are 2 kinds of edit events:
@@ -489,11 +495,11 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 			// if its selection scope then its agentic
 			if (event.scope === vscode.AideAgentScope.Selection) {
 				const responseStream = await this.sidecarClient.agentSessionAnchoredEdit(prompt, sessionId, exchangeIdForEvent, editorUrl, agentMode, variables, this.currentRepoRef, this.projectContext.labels, workosAccessToken);
-				await this.reportAgentEventsToChat(sessionId, agentMode, responseStream);
+				await this.reportAgentEventsToChat(sessionId, responseStream, onError);
 			} else {
 				const isWholeCodebase = event.scope === vscode.AideAgentScope.Codebase;
 				const responseStream = await this.sidecarClient.agentSessionPlanStep(prompt, sessionId, exchangeIdForEvent, editorUrl, agentMode, variables, this.currentRepoRef, this.projectContext.labels, isWholeCodebase, workosAccessToken, event.isDevtoolsContext);
-				await this.reportAgentEventsToChat(sessionId, agentMode, responseStream);
+				await this.reportAgentEventsToChat(sessionId, responseStream, onError);
 			}
 		} else if (agentMode === vscode.AideAgentMode.Plan || agentMode === vscode.AideAgentMode.Agentic) {
 			// For plan generation we have 2 things which can happen:
@@ -502,7 +508,11 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 			// once we have a step of the plan we should stream it along with the edits of the plan
 			// and keep doing that until we are done completely
 			const responseStream = await this.sidecarClient.agentSessionPlanStep(prompt, sessionId, exchangeIdForEvent, editorUrl, agentMode, variables, this.currentRepoRef, this.projectContext.labels, false, workosAccessToken, event.isDevtoolsContext);
-			await this.reportAgentEventsToChat(sessionId, agentMode, responseStream);
+			await this.reportAgentEventsToChat(sessionId, responseStream, onError);
+		}
+		// This we use to track agent usage - only hit this if we didn't fail
+		if (!errored) {
+			this.csEventHandler.handleNewRequest(event.mode === vscode.AideAgentMode.Agentic ? 'AgenticRequest' : 'ChatRequest');
 		}
 	}
 
@@ -512,8 +522,8 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 	 */
 	async reportAgentEventsToChat(
 		sessionId: string,
-		agentMode: vscode.AideAgentMode,
 		stream: AsyncIterableIterator<SideCarAgentEvent>,
+		errorCallback?: () => void,
 	): Promise<void> {
 		const asyncIterable = {
 			[Symbol.asyncIterator]: () => stream
@@ -575,6 +585,7 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 							message: `${event.event.Error.message}.\n\nWe\'d appreciate it if you could report this session using the feedback tool above - this is on us. Please try again.`
 						});
 						stream.stream.stage({ message: 'Error' });
+						errorCallback?.();
 						const openStreams = this.responseStreamCollection.getAllResponseStreams();
 						for (const openStream of openStreams) {
 							this.closeAndRemoveResponseStream(event.request_id, openStream.exchangeId);
@@ -676,6 +687,7 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 					} else if (event.event.FrameworkEvent.ToolCallError) {
 						responseStream.stream.toolTypeError({ message: event.event.FrameworkEvent.ToolCallError.error_string });
 						responseStream.stream.stage({ message: 'Error' });
+						errorCallback?.();
 						const openStreams = this.responseStreamCollection.getAllResponseStreams();
 						for (const stream of openStreams) {
 							this.closeAndRemoveResponseStream(sessionId, stream.exchangeId);
@@ -871,9 +883,6 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 			if (!streamStarted) {
 				throw new SidecarConnectionFailedError();
 			}
-
-			// Send a request usage tracking only if there were no errors during execution
-			this.csEventHandler.handleNewRequest(agentMode === vscode.AideAgentMode.Agentic ? 'AgenticRequest' : 'ChatRequest');
 		} catch (error) {
 			const responseStream = this.responseStreamCollection.latestResponseStream ?? await this.createNewResponseStream(sessionId);
 			if (!responseStream) {
@@ -884,6 +893,7 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 				message: `${error.message}. Please try again.`
 			});
 			responseStream.stream.stage({ message: 'Error' });
+			errorCallback?.();
 
 			// Clean up any open streams
 			const openStreams = this.responseStreamCollection.getAllResponseStreams();
