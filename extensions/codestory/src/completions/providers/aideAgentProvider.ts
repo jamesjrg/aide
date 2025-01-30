@@ -30,6 +30,10 @@ interface ResponseStreamIdentifier {
 
 class AideResponseStreamCollection {
 	private responseStreamCollection: Map<string, vscode.AideAgentEventSenderResponse> = new Map();
+	private _latestResponseStream: vscode.AideAgentEventSenderResponse | undefined;
+	get latestResponseStream() {
+		return this._latestResponseStream;
+	}
 
 	constructor(private extensionContext: vscode.ExtensionContext, private sidecarClient: SideCarClient, private aideAgentSessionProvider: AideAgentSessionProvider) {
 		this.extensionContext = extensionContext;
@@ -48,13 +52,15 @@ class AideResponseStreamCollection {
 			// on the sidecar... pretty sure I will forget and scream at myself later on
 			// for having herd knowledged like this
 			const responseStreamAnswer = this.sidecarClient.cancelRunningEvent(responseStreamIdentifier.sessionId, responseStreamIdentifier.exchangeId, this.aideAgentSessionProvider.editorUrl!, '');
-			this.aideAgentSessionProvider.reportAgentEventsToChat(responseStreamIdentifier.sessionId, true, responseStreamAnswer);
+			this.aideAgentSessionProvider.reportAgentEventsToChat(responseStreamIdentifier.sessionId, vscode.AideAgentMode.Agentic, responseStreamAnswer);
 		}));
 		this.responseStreamCollection.set(this.getKey(responseStreamIdentifier), responseStream);
 	}
 
 	getResponseStream(responseStreamIdentifier: ResponseStreamIdentifier): vscode.AideAgentEventSenderResponse | undefined {
-		return this.responseStreamCollection.get(this.getKey(responseStreamIdentifier));
+		const responseStream = this.responseStreamCollection.get(this.getKey(responseStreamIdentifier));
+		this._latestResponseStream = responseStream;
+		return responseStream;
 	}
 
 	removeResponseStream(responseStreamIdentifer: ResponseStreamIdentifier) {
@@ -160,7 +166,6 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 			handleEvent: this.handleEvent.bind(this),
 			// handleExchangeUserAction: this.handleExchangeUserAction.bind(this),
 			// handleSessionUndo: this.handleSessionUndo.bind(this),
-			// handleSessionIterationRequest: this.handleSessionIterationRequest.bind(this),
 		});
 		this.aideAgent.iconPath = vscode.Uri.joinPath(vscode.extensions.getExtension('codestory-ghost.codestoryai')?.extensionUri ?? vscode.Uri.parse(''), 'assets', 'aide-agent.png');
 		this.aideAgent.requester = {
@@ -380,14 +385,6 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 		// this.sessionId = sessionId;
 	}
 
-	async handleSessionIterationRequest(sessionId: string, exchangeId: string, iterationQuery: string, references: readonly vscode.AideAgentPromptReference[]): Promise<void> {
-		// check here that we do not look at the user info over here if the llm keys are set
-		const session = await vscode.csAuthentication.getSession();
-		const token = session?.accessToken ?? '';
-		const stream = this.sidecarClient.agentSessionEditFeedback(iterationQuery, sessionId, exchangeId, this.editorUrl!, vscode.AideAgentMode.Edit, references, this.currentRepoRef, this.projectContext.labels, token);
-		this.reportAgentEventsToChat(sessionId, true, stream);
-	}
-
 	handleSessionUndo(sessionId: string, exchangeId: string): void {
 		// TODO(skcd): Handle this properly that we are doing an undo over here
 		this.sidecarClient.handleSessionUndo(sessionId, exchangeId, this.editorUrl!);
@@ -470,16 +467,10 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 		const agentMode = event.mode;
 		const variables = event.references;
 
-		// Closure to refactor as little as possible
-		let errored = false;
-		const addError = () => {
-			errored = true;
-		};
-
-		if (event.mode === vscode.AideAgentMode.Chat) {
+		if (agentMode === vscode.AideAgentMode.Chat) {
 			const responseStream = this.sidecarClient.agentSessionChat(prompt, sessionId, exchangeIdForEvent, editorUrl, agentMode, variables, this.currentRepoRef, this.projectContext.labels, workosAccessToken);
-			await this.reportAgentEventsToChat(sessionId, true, responseStream, addError);
-		} else if (event.mode === vscode.AideAgentMode.Edit) {
+			await this.reportAgentEventsToChat(sessionId, agentMode, responseStream);
+		} else if (agentMode === vscode.AideAgentMode.Edit) {
 			// Now lets try to handle the edit event first
 			// there are 2 kinds of edit events:
 			// - anchored and agentic events
@@ -487,24 +478,20 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 			// if its selection scope then its agentic
 			if (event.scope === vscode.AideAgentScope.Selection) {
 				const responseStream = await this.sidecarClient.agentSessionAnchoredEdit(prompt, sessionId, exchangeIdForEvent, editorUrl, agentMode, variables, this.currentRepoRef, this.projectContext.labels, workosAccessToken);
-				await this.reportAgentEventsToChat(sessionId, true, responseStream, addError);
+				await this.reportAgentEventsToChat(sessionId, agentMode, responseStream);
 			} else {
 				const isWholeCodebase = event.scope === vscode.AideAgentScope.Codebase;
 				const responseStream = await this.sidecarClient.agentSessionPlanStep(prompt, sessionId, exchangeIdForEvent, editorUrl, agentMode, variables, this.currentRepoRef, this.projectContext.labels, isWholeCodebase, workosAccessToken, event.isDevtoolsContext);
-				await this.reportAgentEventsToChat(sessionId, true, responseStream, addError);
+				await this.reportAgentEventsToChat(sessionId, agentMode, responseStream);
 			}
-		} else if (event.mode === vscode.AideAgentMode.Plan || event.mode === vscode.AideAgentMode.Agentic) {
+		} else if (agentMode === vscode.AideAgentMode.Plan || agentMode === vscode.AideAgentMode.Agentic) {
 			// For plan generation we have 2 things which can happen:
 			// plan gets generated incrementally or in an instant depending on people using
 			// o1 or not
 			// once we have a step of the plan we should stream it along with the edits of the plan
 			// and keep doing that until we are done completely
 			const responseStream = await this.sidecarClient.agentSessionPlanStep(prompt, sessionId, exchangeIdForEvent, editorUrl, agentMode, variables, this.currentRepoRef, this.projectContext.labels, false, workosAccessToken, event.isDevtoolsContext);
-			await this.reportAgentEventsToChat(sessionId, true, responseStream, addError);
-		}
-		// This we use to track agent usage - only hit this if we didn't fail
-		if (!errored) {
-			this.csEventHandler.handleNewRequest(event.mode === vscode.AideAgentMode.Agentic ? 'AgenticRequest' : 'ChatRequest');
+			await this.reportAgentEventsToChat(sessionId, agentMode, responseStream);
 		}
 	}
 
@@ -514,15 +501,13 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 	 */
 	async reportAgentEventsToChat(
 		sessionId: string,
-		editMode: boolean,
+		agentMode: vscode.AideAgentMode,
 		stream: AsyncIterableIterator<SideCarAgentEvent>,
-		errorCallback?: () => void
 	): Promise<void> {
 		const asyncIterable = {
 			[Symbol.asyncIterator]: () => stream
 		};
 
-		let latestResponseStream: vscode.AideAgentEventSenderResponse | undefined = undefined;
 		try {
 			let streamStarted = false;
 
@@ -550,27 +535,45 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 				}
 
 				if (event.event.Error) {
-					const stream = latestResponseStream ?? await this.createNewResponseStream(event.request_id);
+					if (event.event.Error.message.toLowerCase().endsWith('cancelled by user')) {
+						this.responseStreamCollection.latestResponseStream?.stream.stage({ message: 'Cancelled' });
+						const openStreams = this.responseStreamCollection.getAllResponseStreams();
+						for (const openStream of openStreams) {
+							this.closeAndRemoveResponseStream(event.request_id, openStream.exchangeId);
+						}
+						streamStarted = true;
+					} else if (event.event.Error.message.toLowerCase().endsWith('wrong tool output')) {
+						continue;
+					}
+
+					const stream = this.responseStreamCollection.latestResponseStream ?? await this.createNewResponseStream(event.request_id);
 					if (stream) {
 						stream.stream.toolTypeError({
 							message: `${event.event.Error.message}.\n\nWe\'d appreciate it if you could report this session using the feedback tool above - this is on us. Please try again.`
 						});
 						stream.stream.stage({ message: 'Error' });
-						errorCallback?.();
 						const openStreams = this.responseStreamCollection.getAllResponseStreams();
 						for (const openStream of openStreams) {
 							this.closeAndRemoveResponseStream(event.request_id, openStream.exchangeId);
 						}
 					}
 					return;
+				} else if (event.event.ExchangeEvent?.ExecutionState) {
+					const executionState = event.event.ExchangeEvent.ExecutionState;
+					if (executionState === 'Cancelled') {
+						this.responseStreamCollection.latestResponseStream?.stream.stage({ message: 'Cancelled' });
+						const openStreams = this.responseStreamCollection.getAllResponseStreams();
+						for (const openStream of openStreams) {
+							this.closeAndRemoveResponseStream(event.request_id, openStream.exchangeId);
+						}
+						streamStarted = true;
+						continue;
+					}
 				}
 
 				const sessionId = event.request_id;
 				const exchangeId = event.exchange_id;
-				const responseStream = latestResponseStream = this.responseStreamCollection.getResponseStream({
-					sessionId,
-					exchangeId,
-				});
+				const responseStream = this.responseStreamCollection.getResponseStream({ sessionId, exchangeId });
 				if (responseStream === undefined) {
 					continue;
 				}
@@ -648,17 +651,6 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 					} else if (event.event.FrameworkEvent.ToolCallError) {
 						responseStream.stream.toolTypeError({ message: event.event.FrameworkEvent.ToolCallError.error_string });
 						responseStream.stream.stage({ message: 'Error' });
-						errorCallback?.();
-						const openStreams = this.responseStreamCollection.getAllResponseStreams();
-						for (const stream of openStreams) {
-							this.closeAndRemoveResponseStream(sessionId, stream.exchangeId);
-						}
-						return;
-					} else if (event.event.FrameworkEvent.ToolNotFound) {
-						// Todo (@g-danna @theskcd) make the tool not found error more descriptive and use its own type
-						responseStream.stream.toolTypeError({ message: 'An LLM error occurred, please try again later.' });
-						responseStream.stream.stage({ message: 'Error' });
-						errorCallback?.();
 						const openStreams = this.responseStreamCollection.getAllResponseStreams();
 						for (const stream of openStreams) {
 							this.closeAndRemoveResponseStream(sessionId, stream.exchangeId);
@@ -673,7 +665,7 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 					}
 					const symbolEventKey = symbolEventKeys[0] as keyof typeof symbolEvent;
 					// If this is a symbol event then we have to make sure that we are getting the probe request over here
-					if (!editMode && symbolEventKey === 'Probe' && symbolEvent.Probe !== undefined) {
+					if (symbolEventKey === 'Probe' && symbolEvent.Probe !== undefined) {
 						// response.breakdown({
 						// 	reference: {
 						// 		uri: vscode.Uri.file(symbolEvent.Probe.symbol_identifier.fs_file_path ?? 'symbol_not_found'),
@@ -727,7 +719,7 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 						}
 
 						const subStepType = probeRequestKeys[0];
-						if (!editMode && subStepType === 'ProbeAnswer' && probeSubStep.ProbeAnswer !== undefined) {
+						if (subStepType === 'ProbeAnswer' && probeSubStep.ProbeAnswer !== undefined) {
 							// const probeAnswer = probeSubStep.ProbeAnswer;
 							// response.breakdown({
 							// 	reference: {
@@ -854,8 +846,10 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 			if (!streamStarted) {
 				throw new SidecarConnectionFailedError();
 			}
+
+			this.csEventHandler.handleNewRequest(agentMode === vscode.AideAgentMode.Agentic ? 'AgenticRequest' : 'ChatRequest');
 		} catch (error) {
-			const responseStream = latestResponseStream ?? await this.createNewResponseStream(sessionId);
+			const responseStream = this.responseStreamCollection.latestResponseStream ?? await this.createNewResponseStream(sessionId);
 			if (!responseStream) {
 				throw error;
 			}
@@ -864,7 +858,6 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 				message: `${error.message}. Please try again.`
 			});
 			responseStream.stream.stage({ message: 'Error' });
-			errorCallback?.();
 
 			// Clean up any open streams
 			const openStreams = this.responseStreamCollection.getAllResponseStreams();
