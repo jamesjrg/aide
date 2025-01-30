@@ -570,20 +570,19 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 						}
 						streamStarted = true;
 						return;
-					} else if (event.event.Error.message.toLowerCase().endsWith('wrong tool output')) {
-						// This is a weird one and I want to test some more. Right now, if the agent is in the middle of
-						// producting a tool output and the user hits cancel, this event comes through to us. But user
-						// cancellation is properly handled in a separate place, for which we also get a separate
-						// event. So for now, just ignoring this. The obvious test case to evaluate is what happens
-						// when a model actually produces incorrect tool output.
-						continue;
 					}
 
 					const stream = this.responseStreamCollection.latestResponseStream ?? await this.createNewResponseStream(event.request_id);
 					if (stream) {
-						stream.stream.toolTypeError({
-							message: `${event.event.Error.message}.\n\nWe\'d appreciate it if you could report this session using the feedback tool above - this is on us. Please try again.`
-						});
+						if (event.event.Error.message.toLowerCase().endsWith('wrong tool output')) {
+							stream.stream.toolTypeError({
+								message: `The LLM that you're using right now returned a response that does not adhere to the format our framework expects, and thus this request has failed. If you keep seeing this error, this is likely because the LLM is unable to follow our system instructions and it is recommended to switch over to one of our recommended models instead.`
+							});
+						} else {
+							stream.stream.toolTypeError({
+								message: `${event.event.Error.message}.\n\nWe\'d appreciate it if you could report this session using the feedback tool above - this is on us. Please try again.`
+							});
+						}
 						stream.stream.stage({ message: 'Error' });
 						errorCallback?.();
 						const openStreams = this.responseStreamCollection.getAllResponseStreams();
@@ -685,9 +684,16 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 							}
 						}
 					} else if (event.event.FrameworkEvent.ToolCallError) {
-						responseStream.stream.toolTypeError({ message: event.event.FrameworkEvent.ToolCallError.error_string });
-						responseStream.stream.stage({ message: 'Error' });
-						errorCallback?.();
+						const error_string = event.event.FrameworkEvent.ToolCallError.error_string;
+						if (error_string === 'Cancelled Response') {
+							responseStream.stream.stage({ message: 'Cancelled' });
+						} else {
+							responseStream.stream.toolTypeError({
+								message: `The LLM that you're using right now returned a response that does not adhere to the format our framework expects, and thus this request has failed. If you keep seeing this error, this is likely because the LLM is unable to follow our system instructions and it is recommended to switch over to one of our recommended models instead.`
+							});
+							responseStream.stream.stage({ message: 'Error' });
+							errorCallback?.();
+						}
 						const openStreams = this.responseStreamCollection.getAllResponseStreams();
 						for (const stream of openStreams) {
 							this.closeAndRemoveResponseStream(sessionId, stream.exchangeId);
