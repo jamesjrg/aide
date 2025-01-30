@@ -30,6 +30,10 @@ interface ResponseStreamIdentifier {
 
 class AideResponseStreamCollection {
 	private responseStreamCollection: Map<string, vscode.AideAgentEventSenderResponse> = new Map();
+	// We're maintaining and using this because we currently have a stream created at the start of any request.
+	// But there is also a new stream that gets created when we press cancel. But, we don't want to create a new exchange
+	// when the post-cancellation events come in via the old stream from sidecar. This lets us keep track of the last
+	// one always and use that to send over the cancellation events.
 	private _latestResponseStream: vscode.AideAgentEventSenderResponse | undefined;
 	get latestResponseStream() {
 		return this._latestResponseStream;
@@ -536,6 +540,8 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 
 				if (event.event.Error) {
 					if (event.event.Error.message.toLowerCase().endsWith('cancelled by user')) {
+						// Sidecar sends this event when the user explicitly cancels any task and we invoke sidecar's
+						// cancellation API. Once we receive this, we should close over all the open streams.
 						this.responseStreamCollection.latestResponseStream?.stream.stage({ message: 'Cancelled' });
 						const openStreams = this.responseStreamCollection.getAllResponseStreams();
 						for (const openStream of openStreams) {
@@ -543,6 +549,11 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 						}
 						streamStarted = true;
 					} else if (event.event.Error.message.toLowerCase().endsWith('wrong tool output')) {
+						// This is a weird one and I want to test some more. Right now, if the agent is in the middle of
+						// producting a tool output and the user hits cancel, this event comes through to us. But user
+						// cancellation is properly handled in a separate place, for which we also get a separate
+						// event. So for now, just ignoring this. The obvious test case to evaluate is what happens
+						// when a model actually produces incorrect tool output.
 						continue;
 					}
 
@@ -559,6 +570,8 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 					}
 					return;
 				} else if (event.event.ExchangeEvent?.ExecutionState) {
+					// For some reason, when sidecar sends over the cancellation execution state event, it doesn't have a
+					// session id or response id. So we need to catch this before we look for an existing exchange using these IDs.
 					const executionState = event.event.ExchangeEvent.ExecutionState;
 					if (executionState === 'Cancelled') {
 						this.responseStreamCollection.latestResponseStream?.stream.stage({ message: 'Cancelled' });
@@ -847,6 +860,7 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 				throw new SidecarConnectionFailedError();
 			}
 
+			// Send a request usage tracking only if there were no errors during execution
 			this.csEventHandler.handleNewRequest(agentMode === vscode.AideAgentMode.Agentic ? 'AgenticRequest' : 'ChatRequest');
 		} catch (error) {
 			const responseStream = this.responseStreamCollection.latestResponseStream ?? await this.createNewResponseStream(sessionId);
