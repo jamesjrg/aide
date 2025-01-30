@@ -150,13 +150,7 @@ function startInterceptingDocument(
 			const devtoolsScriptFragment = parseFragment(makeDevtoolsScript(devtoolsUrl));
 			const devtoolsScriptNode = devtoolsScriptFragment.childNodes[0];
 
-
-			const firstChild = defaultTreeAdapter.getFirstChild(headNode);
-			if (firstChild) {
-				defaultTreeAdapter.insertBefore(headNode, devtoolsScriptNode, firstChild);
-			} else {
-				defaultTreeAdapter.appendChild(headNode, devtoolsScriptNode);
-			}
+			defaultTreeAdapter.appendChild(headNode, devtoolsScriptNode);
 
 			const navigationScriptFragment = parseFragment(makeNavigationScript(), { onParseError: (error) => console.log(error) });
 			const navigationScriptNode = navigationScriptFragment.childNodes[0];

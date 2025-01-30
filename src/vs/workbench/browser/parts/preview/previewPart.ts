@@ -60,7 +60,7 @@ export class PreviewEditorPart extends OverlayedPart implements IDisposable {
 		layoutService.registerOverlayedPart(this);
 	}
 
-	override createContentArea(parent: HTMLElement): HTMLElement {
+	protected override createContentArea(parent: HTMLElement): HTMLElement {
 
 		// starts invisible by default
 		parent.style.visibility = 'hidden';
