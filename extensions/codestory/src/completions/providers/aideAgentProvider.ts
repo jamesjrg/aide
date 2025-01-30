@@ -34,9 +34,9 @@ class AideResponseStreamCollection {
 	// But there is also a new stream that gets created when we press cancel. But, we don't want to create a new exchange
 	// when the post-cancellation events come in via the old stream from sidecar. This lets us keep track of the last
 	// one always and use that to send over the cancellation events.
-	private _latestResponseStream: vscode.AideAgentEventSenderResponse | undefined;
+	private _latestResponseStream: { key: string; value: vscode.AideAgentEventSenderResponse } | undefined;
 	get latestResponseStream() {
-		return this._latestResponseStream;
+		return this._latestResponseStream?.value;
 	}
 
 	constructor(private extensionContext: vscode.ExtensionContext, private sidecarClient: SideCarClient, private aideAgentSessionProvider: AideAgentSessionProvider) {
@@ -62,13 +62,20 @@ class AideResponseStreamCollection {
 	}
 
 	getResponseStream(responseStreamIdentifier: ResponseStreamIdentifier): vscode.AideAgentEventSenderResponse | undefined {
-		const responseStream = this.responseStreamCollection.get(this.getKey(responseStreamIdentifier));
-		this._latestResponseStream = responseStream;
+		const key = this.getKey(responseStreamIdentifier);
+		const responseStream = this.responseStreamCollection.get(key);
+		if (responseStream) {
+			this._latestResponseStream = { key, value: responseStream };
+		}
 		return responseStream;
 	}
 
 	removeResponseStream(responseStreamIdentifer: ResponseStreamIdentifier) {
-		this.responseStreamCollection.delete(this.getKey(responseStreamIdentifer));
+		const key = this.getKey(responseStreamIdentifer);
+		const success = this.responseStreamCollection.delete(key);
+		if (success && this._latestResponseStream?.key === key) {
+			this._latestResponseStream = undefined;
+		}
 	}
 
 	getAllResponseStreams(): vscode.AideAgentEventSenderResponse[] {
@@ -542,12 +549,17 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 					if (event.event.Error.message.toLowerCase().endsWith('cancelled by user')) {
 						// Sidecar sends this event when the user explicitly cancels any task and we invoke sidecar's
 						// cancellation API. Once we receive this, we should close over all the open streams.
+						// Moreover, the reason why we handle cancellation once here, and then via ExecutionStae below
+						// is because if cancellation happens during a tool use, the other gets called. But if it
+						// happens not during tool use, this gets fired first. Well, oof for the day this blows up
+						// on our face. To the person dealing with this at that point - I'm sorry - I really had no option.
 						this.responseStreamCollection.latestResponseStream?.stream.stage({ message: 'Cancelled' });
 						const openStreams = this.responseStreamCollection.getAllResponseStreams();
 						for (const openStream of openStreams) {
 							this.closeAndRemoveResponseStream(event.request_id, openStream.exchangeId);
 						}
 						streamStarted = true;
+						return;
 					} else if (event.event.Error.message.toLowerCase().endsWith('wrong tool output')) {
 						// This is a weird one and I want to test some more. Right now, if the agent is in the middle of
 						// producting a tool output and the user hits cancel, this event comes through to us. But user
