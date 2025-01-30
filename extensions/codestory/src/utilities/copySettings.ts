@@ -308,14 +308,27 @@ export const migrateFromVSCodeOSS = async (logger: Logger): Promise<void> => {
 			if (!settingsContent.trim()) {
 				shouldMigrate = true;
 			} else {
-				const settingsJson = JSON.parse(settingsContent);
-				// Check if the JSON object has any keys
-				if (Object.keys(settingsJson).length === 0) {
+				// Try to fix common JSON formatting issues
+				const cleanedContent = settingsContent
+					.replace(/[\u200B-\u200D\uFEFF]/g, '') // Remove zero-width spaces
+					.replace(/,(\s*[}\]])/g, '$1') // Remove trailing commas
+					.replace(/([{,]\s*)'([^']+)'(\s*:)/g, '$1"$2"$3') // Convert single quotes to double quotes for property names
+					.replace(/([{,]\s*)([a-zA-Z0-9_]+)(\s*:)/g, '$1"$2"$3'); // Add quotes to unquoted property names
+
+				try {
+					const settingsJson = JSON.parse(cleanedContent);
+					// Check if the JSON object has any keys
+					if (Object.keys(settingsJson).length === 0) {
+						shouldMigrate = true;
+					}
+				} catch (parseError) {
+					// If we still can't parse after cleaning, log and migrate
+					logger.warn('Error parsing settings file even after cleanup, will attempt migration', parseError);
 					shouldMigrate = true;
 				}
 			}
 		} catch (error) {
-			// If there's an error reading or parsing the file, assume it's corrupted and migrate
+			// If there's an error reading the file, assume it's corrupted and migrate
 			logger.warn('Error reading settings file, will attempt migration', error);
 			shouldMigrate = true;
 		}
