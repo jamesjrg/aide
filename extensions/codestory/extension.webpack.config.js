@@ -25,8 +25,6 @@ module.exports = withDefaults({
 				{
 					from: 'node_modules/web-tree-sitter/tree-sitter.wasm',
 					to: '[name][ext]',
-					// These will only be present on Windows for now
-					noErrorOnMissing: !isWindows
 				}
 			]
 		})
