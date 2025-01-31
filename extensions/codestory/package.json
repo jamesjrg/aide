@@ -35,8 +35,11 @@
   ],
   "files": [
     "src/llm/embeddings/models/**/*",
+    "src/languages/tree-sitter.wasm",
     "src/languages/tree-sitter-go.wasm",
     "src/languages/tree-sitter-python.wasm",
+    "src/languages/tree-sitter-tsx.wasm",
+    "src/languages/tree-sitter-typescript.wasm",
     "src/completions/text-processing/treeSitter/wasm/tree-sitter-javascript.wasm",
     "src/completions/text-processing/treeSitter/wasm/tree-sitter-tsx.wasm",
     "src/completions/text-processing/treeSitter/wasm/tree-sitter-typescript.wasm",
