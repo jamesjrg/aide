@@ -20,7 +20,7 @@ module.exports = withDefaults({
 		}
 	},
 	plugins: [
-		CopyWebpackPlugin({
+		new CopyWebpackPlugin({
 			patterns: [
 				{
 					from: 'node_modules/web-tree-sitter/tree-sitter.wasm',
