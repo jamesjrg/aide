@@ -22,7 +22,7 @@ export class DevtoolsSession extends vscode.Disposable {
 	}
 
 	get proxyPort() {
-		return this._proxyResult?.listenPort;
+		return this._proxyResult?.proxyPort;
 	}
 
 	get devtoolsPort() {
@@ -132,7 +132,9 @@ export class DevtoolsSession extends vscode.Disposable {
 					new vscode.Range(0, 0, Number.MAX_SAFE_INTEGER, Number.MAX_SAFE_INTEGER)
 				);
 
-				console.log(parsedSource);
+				if (process.env.VSCODE_DEV === '1') {
+					console.log(`[cs-devtools] ${parsedSource}`);
+				}
 
 				let range = fullRange;
 				if (origin === InfoOrigin.Tag || origin === InfoOrigin.DevtoolsSymbolicated) {
