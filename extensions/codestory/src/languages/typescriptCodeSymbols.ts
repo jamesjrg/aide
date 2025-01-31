@@ -21,8 +21,6 @@ export async function initTypescriptParser(): Promise<Parser> {
 	// Point this path at your tree-sitter-typescript.wasm file.
 	const tsWasmPath = path.resolve(__dirname, 'tree-sitter-typescript.wasm');
 
-	path.resolve(__dirname, 'tree-sitter.wasm');
-
 	const tsLang = await Parser.Language.load(tsWasmPath);
 
 	parser.setLanguage(tsLang);

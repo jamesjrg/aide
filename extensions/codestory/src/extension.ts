@@ -30,9 +30,12 @@ import { getUniqueId } from './utilities/uniqueId';
 import { ProjectContext } from './utilities/workspaceContext';
 import { installCommandMap, PACKAGE_NAME as COMPONENT_TAGGER_PACKAGE_NAME, PackageManager, transformViteConfig } from './devtools/react/installVitePlugin';
 import { executeTerminalCommand } from './terminal/TerminalManager';
-import { basename, dirname } from 'node:path';
+import { basename, dirname, resolve } from 'node:path';
 
 export let SIDECAR_CLIENT: SideCarClient | null = null;
+
+// Make sure that the tree sitter wasm is added to the dist assets
+resolve(__dirname, 'tree-sitter.wasm');
 
 const showBrowserCommand = 'codestory.show-simple-browser';
 
