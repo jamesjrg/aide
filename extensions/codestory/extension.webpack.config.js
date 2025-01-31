@@ -19,16 +19,6 @@ module.exports = withDefaults({
 			'request': require.resolve('node-fetch')
 		}
 	},
-	plugins: [
-		new CopyWebpackPlugin({
-			patterns: [
-				{
-					from: 'node_modules/web-tree-sitter/tree-sitter.wasm',
-					to: '[name][ext]',
-				}
-			]
-		})
-	],
 	externals: {
 		bufferutil: 'commonjs bufferutil',
 		'utf-8-validate': 'commonjs utf-8-validate',
