@@ -9,6 +9,9 @@
 
 const withDefaults = require('../shared.webpack.config');
 
+const CopyWebpackPlugin = require('copy-webpack-plugin');
+
+
 module.exports = withDefaults({
 	context: __dirname,
 	resolve: {
@@ -16,6 +19,18 @@ module.exports = withDefaults({
 			'request': require.resolve('node-fetch')
 		}
 	},
+	plugins: [
+		CopyWebpackPlugin({
+			patterns: [
+				{
+					from: 'node_modules/web-tree-sitter/tree-sitter.wasm',
+					to: '[name][ext]',
+					// These will only be present on Windows for now
+					noErrorOnMissing: !isWindows
+				}
+			]
+		})
+	],
 	externals: {
 		bufferutil: 'commonjs bufferutil',
 		'utf-8-validate': 'commonjs utf-8-validate',
