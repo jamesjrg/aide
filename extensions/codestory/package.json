@@ -35,7 +35,7 @@
   ],
   "files": [
     "src/llm/embeddings/models/**/*",
-    "src/languages/tree-sitter.wasm",
+    "src/tree-sitter.wasm",
     "src/languages/tree-sitter-go.wasm",
     "src/languages/tree-sitter-python.wasm",
     "src/languages/tree-sitter-tsx.wasm",
